@@ -1,0 +1,55 @@
+{
+  "name": "demo-agentic-hedgefund-hedera-cli",
+  "version": "0.1.0",
+  "description": "Agentic hedgefund plugins for Hiero CLI",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "npm run format && rimraf --glob 'dist/' && tsc && tsc-alias",
+    "clean": "rm -rf dist/ && rm -rf coverage/",
+    "lint": "eslint . --quiet",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "test:unit": "npm run typecheck && cross-env JEST_SUITE_NAME=\"Unit Tests\" JEST_JUNIT_OUTPUT_NAME=\"junit.xml\" jest -c jest.unit.config.js --coverage --coverageDirectory=coverage/unit",
+    "test": "npm run test:unit"
+  },
+  "dependencies": {
+    "@hiero-ledger/hiero-cli": "file:../hedera-cli-fork/hiero-ledger-hiero-cli-0.13.0.tgz",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.15.24",
+    "@swc/jest": "^0.2.39",
+    "@types/jest": "30.0.0",
+    "@types/node": "25.3.5",
+    "@typescript-eslint/eslint-plugin": "8.50.0",
+    "@typescript-eslint/parser": "8.50.0",
+    "cross-env": "10.1.0",
+    "eslint": "9.39.2",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-no-relative-import-paths": "1.6.1",
+    "eslint-plugin-prettier": "5.5.5",
+    "eslint-plugin-simple-import-sort": "12.1.1",
+    "jest": "30.2.0",
+    "jest-junit": "16.0.0",
+    "prettier": "3.8.1",
+    "rimraf": "6.1.2",
+    "tsc-alias": "1.8.16",
+    "tsconfig-paths": "4.2.0",
+    "typescript": "5.9.3"
+  },
+  "lint-staged": {
+    "**/*.{js,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{json,md,yml,yaml,css,scss,html}": [
+      "prettier --write"
+    ]
+  }
+}
