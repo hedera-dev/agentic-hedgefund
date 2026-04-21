@@ -5,9 +5,9 @@ import type {
 } from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapNetworkConfig } from '@/plugins/saucerswap-v1/constants';
 
-export interface SaucerSwapV1DepositNormalizedParams {
+export interface SaucerSwapV1DepositNormalizedTokenParams {
   config: SaucerSwapNetworkConfig;
-  hbarSide: 'A' | 'B' | null;
+  isHbar: false;
   tokenAEvm: string;
   tokenBEvm: string;
   amountA: bigint;
@@ -19,6 +19,25 @@ export interface SaucerSwapV1DepositNormalizedParams {
   gas: number;
   network: SupportedNetwork;
 }
+
+export interface SaucerSwapV1DepositNormalizedHbarParams {
+  config: SaucerSwapNetworkConfig;
+  isHbar: true;
+  tokenEvm: string;
+  hbarEvm: string;
+  tokenAmount: bigint;
+  hbarAmount: bigint;
+  tokenMin: bigint;
+  hbarMin: bigint;
+  recipientEvmAddress: string;
+  deadlineSeconds: number;
+  gas: number;
+  network: SupportedNetwork;
+}
+
+export type SaucerSwapV1DepositNormalizedParams =
+  | SaucerSwapV1DepositNormalizedTokenParams
+  | SaucerSwapV1DepositNormalizedHbarParams;
 
 export interface SaucerSwapV1DepositBuildTransactionResult {
   transaction: ContractExecuteTransaction;

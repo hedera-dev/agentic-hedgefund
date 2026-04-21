@@ -1,16 +1,19 @@
 import type {
   CommandHandlerArgs,
   CommandResult,
+  ContractTransactionService,
 } from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapV1DepositOutput } from './output';
 import type {
   SaucerSwapV1DepositBuildTransactionResult,
   SaucerSwapV1DepositExecuteTransactionResult,
+  SaucerSwapV1DepositNormalizedHbarParams,
   SaucerSwapV1DepositNormalizedParams,
+  SaucerSwapV1DepositNormalizedTokenParams,
   SaucerSwapV1DepositSignTransactionResult,
 } from './types';
 
-import { ContractFunctionParameters, Hbar, HbarUnit } from '@hashgraph/sdk';
+import { ContractFunctionParameters } from '@hashgraph/sdk';
 import {
   AliasType,
   BaseTransactionCommand,
@@ -101,23 +104,54 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
     }
     const recipient = operatorMirrorInfo.evmAddress;
 
-    const hbarSide: 'A' | 'B' | null = aIsHbar ? 'A' : bIsHbar ? 'B' : null;
     const slippagePct = validArgs.slippage;
 
-    return {
-      config,
-      hbarSide,
-      tokenAEvm,
-      tokenBEvm,
-      amountA,
-      amountB,
-      amountAMin: computeMinOutput(amountA, slippagePct),
-      amountBMin: computeMinOutput(amountB, slippagePct),
-      recipientEvmAddress: recipient,
-      deadlineSeconds: validArgs.deadline,
-      gas: validArgs.gas,
-      network,
-    };
+    if (aIsHbar) {
+      return {
+        config,
+        isHbar: true,
+        tokenEvm: tokenBEvm,
+        hbarEvm: tokenAEvm,
+        tokenAmount: amountB,
+        hbarAmount: amountA,
+        tokenMin: computeMinOutput(amountB, slippagePct),
+        hbarMin: computeMinOutput(amountA, slippagePct),
+        recipientEvmAddress: recipient,
+        deadlineSeconds: validArgs.deadline,
+        gas: validArgs.gas,
+        network,
+      };
+    } else if (bIsHbar) {
+      return {
+        config,
+        isHbar: true,
+        tokenEvm: tokenAEvm,
+        hbarEvm: tokenBEvm,
+        tokenAmount: amountA,
+        hbarAmount: amountB,
+        tokenMin: computeMinOutput(amountA, slippagePct),
+        hbarMin: computeMinOutput(amountB, slippagePct),
+        recipientEvmAddress: recipient,
+        deadlineSeconds: validArgs.deadline,
+        gas: validArgs.gas,
+        network,
+      };
+    } else {
+      return {
+        config,
+        isHbar: false,
+        tokenAEvm,
+        tokenBEvm,
+        amountA,
+        amountB,
+        amountAMin: computeMinOutput(amountA, slippagePct),
+        amountBMin: computeMinOutput(amountB, slippagePct),
+        recipientEvmAddress: recipient,
+        deadlineSeconds: validArgs.deadline,
+        gas: validArgs.gas,
+        network,
+      };
+    }
   }
 
   async buildTransaction(
@@ -126,55 +160,55 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
   ): Promise<SaucerSwapV1DepositBuildTransactionResult> {
     const { api } = args;
     const deadline = computeDeadline(params.deadlineSeconds);
-
-    if (params.hbarSide === null) {
-      const functionParameters = new ContractFunctionParameters()
-        .addAddress(params.tokenAEvm)
-        .addAddress(params.tokenBEvm)
-        .addUint256(toBigNumber(params.amountA))
-        .addUint256(toBigNumber(params.amountB))
-        .addUint256(toBigNumber(params.amountAMin))
-        .addUint256(toBigNumber(params.amountBMin))
-        .addAddress(params.recipientEvmAddress)
-        .addUint256(deadline);
-
-      const result = api.contract.contractExecuteTransaction({
-        contractId: params.config.routerContractId,
-        gas: params.gas,
-        functionName: 'addLiquidity',
-        functionParameters,
-      });
-      return { transaction: result.transaction };
+    if (!params.isHbar) {
+      return this.buildAddLiquidityTransaction(api.contract, params, deadline);
     }
+    return this.buildAddLiquidityEthTransaction(api.contract, params, deadline);
+  }
 
-    const tokenEvm =
-      params.hbarSide === 'A' ? params.tokenBEvm : params.tokenAEvm;
-    const tokenDesired =
-      params.hbarSide === 'A' ? params.amountB : params.amountA;
-    const tokenMin =
-      params.hbarSide === 'A' ? params.amountBMin : params.amountAMin;
-    const hbarAmount =
-      params.hbarSide === 'A' ? params.amountA : params.amountB;
-    const hbarMin =
-      params.hbarSide === 'A' ? params.amountAMin : params.amountBMin;
-    console.log(tokenDesired);
-    console.log(tokenMin);
-    console.log(hbarMin);
-
+  private buildAddLiquidityTransaction(
+    contractService: ContractTransactionService,
+    params: SaucerSwapV1DepositNormalizedTokenParams,
+    deadline: ReturnType<typeof computeDeadline>,
+  ): SaucerSwapV1DepositBuildTransactionResult {
     const functionParameters = new ContractFunctionParameters()
-      .addAddress(tokenEvm)
-      .addUint256(toBigNumber(tokenDesired))
-      .addUint256(toBigNumber(tokenMin))
-      .addUint256(toBigNumber(hbarMin))
+      .addAddress(params.tokenAEvm)
+      .addAddress(params.tokenBEvm)
+      .addUint256(toBigNumber(params.amountA))
+      .addUint256(toBigNumber(params.amountB))
+      .addUint256(toBigNumber(params.amountAMin))
+      .addUint256(toBigNumber(params.amountBMin))
       .addAddress(params.recipientEvmAddress)
       .addUint256(deadline);
 
-    const result = api.contract.contractExecuteTransaction({
+    const result = contractService.contractExecuteTransaction({
+      contractId: params.config.routerContractId,
+      gas: params.gas,
+      functionName: 'addLiquidity',
+      functionParameters,
+    });
+    return { transaction: result.transaction };
+  }
+
+  private buildAddLiquidityEthTransaction(
+    contractService: ContractTransactionService,
+    params: SaucerSwapV1DepositNormalizedHbarParams,
+    deadline: ReturnType<typeof computeDeadline>,
+  ): SaucerSwapV1DepositBuildTransactionResult {
+    const functionParameters = new ContractFunctionParameters()
+      .addAddress(params.tokenEvm)
+      .addUint256(toBigNumber(params.tokenAmount))
+      .addUint256(toBigNumber(params.tokenMin))
+      .addUint256(toBigNumber(params.hbarMin))
+      .addAddress(params.recipientEvmAddress)
+      .addUint256(deadline);
+
+    const result = contractService.contractExecuteTransaction({
       contractId: params.config.routerContractId,
       gas: params.gas,
       functionName: 'addLiquidityETH',
       functionParameters,
-      payableAmount: hbarAmount,
+      payableAmount: params.hbarAmount,
     });
     return { transaction: result.transaction };
   }
@@ -218,10 +252,6 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
       contractId: params.config.routerContractId,
       network: params.network,
       transactionId: execute.transactionResult.transactionId,
-      amountA: params.amountA.toString(),
-      amountB: params.amountB.toString(),
-      amountAMin: params.amountAMin.toString(),
-      amountBMin: params.amountBMin.toString(),
     };
     return { result: outputData };
   }

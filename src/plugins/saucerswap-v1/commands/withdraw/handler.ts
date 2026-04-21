@@ -1,12 +1,15 @@
 import type {
   CommandHandlerArgs,
   CommandResult,
+  ContractTransactionService,
 } from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapV1WithdrawOutput } from './output';
 import type {
   SaucerSwapV1WithdrawBuildTransactionResult,
   SaucerSwapV1WithdrawExecuteTransactionResult,
+  SaucerSwapV1WithdrawNormalizedHbarParams,
   SaucerSwapV1WithdrawNormalizedParams,
+  SaucerSwapV1WithdrawNormalizedTokenParams,
   SaucerSwapV1WithdrawSignTransactionResult,
 } from './types';
 
@@ -30,8 +33,7 @@ import { tokenEvmAddress } from '@/shared/util/token-resolver';
 
 import { SaucerSwapV1WithdrawInputSchema } from './input';
 
-/** Display liquidity amounts without `t` assume this many decimals (common for V2 LP tokens). */
-const LP_TOKEN_DISPLAY_DECIMALS = 18;
+const LP_TOKEN_DISPLAY_DECIMALS = 8;
 
 export const SAUCERSWAP_V1_WITHDRAW_COMMAND_NAME = 'saucerswap-v1_withdraw';
 
@@ -118,9 +120,37 @@ export class SaucerSwapV1WithdrawCommand extends BaseTransactionCommand<
     }
     const recipient = operatorMirrorInfo.evmAddress;
 
+    if (aIsHbar) {
+      return {
+        config,
+        isHbar: true,
+        tokenEvm: tokenBEvm,
+        liquidity,
+        tokenMin: minAmountB,
+        hbarMin: minAmountA,
+        recipientEvmAddress: recipient,
+        deadlineSeconds: validArgs.deadline,
+        gas: validArgs.gas,
+        network,
+      };
+    } else if (bIsHbar) {
+      return {
+        config,
+        isHbar: true,
+        tokenEvm: tokenAEvm,
+        liquidity,
+        tokenMin: minAmountA,
+        hbarMin: minAmountB,
+        recipientEvmAddress: recipient,
+        deadlineSeconds: validArgs.deadline,
+        gas: validArgs.gas,
+        network,
+      };
+    }
+
     return {
       config,
-      hbarSide: aIsHbar ? 'A' : bIsHbar ? 'B' : null,
+      isHbar: false,
       tokenAEvm,
       tokenBEvm,
       liquidity,
@@ -137,44 +167,58 @@ export class SaucerSwapV1WithdrawCommand extends BaseTransactionCommand<
     args: CommandHandlerArgs,
     params: SaucerSwapV1WithdrawNormalizedParams,
   ): Promise<SaucerSwapV1WithdrawBuildTransactionResult> {
-    const { api } = args;
     const deadline = computeDeadline(params.deadlineSeconds);
-
-    if (params.hbarSide === null) {
-      const functionParameters = new ContractFunctionParameters()
-        .addAddress(params.tokenAEvm)
-        .addAddress(params.tokenBEvm)
-        .addUint256(toBigNumber(params.liquidity))
-        .addUint256(toBigNumber(params.minAmountA))
-        .addUint256(toBigNumber(params.minAmountB))
-        .addAddress(params.recipientEvmAddress)
-        .addUint256(deadline);
-
-      const result = api.contract.contractExecuteTransaction({
-        contractId: params.config.routerContractId,
-        gas: params.gas,
-        functionName: 'removeLiquidity',
-        functionParameters,
-      });
-      return { transaction: result.transaction };
+    if (!params.isHbar) {
+      return this.buildRemoveLiquidityTransaction(
+        args.api.contract,
+        params,
+        deadline,
+      );
     }
+    return this.buildRemoveLiquidityEthTransaction(
+      args.api.contract,
+      params,
+      deadline,
+    );
+  }
 
-    const tokenEvm =
-      params.hbarSide === 'A' ? params.tokenBEvm : params.tokenAEvm;
-    const tokenMin =
-      params.hbarSide === 'A' ? params.minAmountB : params.minAmountA;
-    const hbarMin =
-      params.hbarSide === 'A' ? params.minAmountA : params.minAmountB;
-
+  private buildRemoveLiquidityTransaction(
+    contractService: ContractTransactionService,
+    params: SaucerSwapV1WithdrawNormalizedTokenParams,
+    deadline: ReturnType<typeof computeDeadline>,
+  ): SaucerSwapV1WithdrawBuildTransactionResult {
     const functionParameters = new ContractFunctionParameters()
-      .addAddress(tokenEvm)
+      .addAddress(params.tokenAEvm)
+      .addAddress(params.tokenBEvm)
       .addUint256(toBigNumber(params.liquidity))
-      .addUint256(toBigNumber(tokenMin))
-      .addUint256(toBigNumber(hbarMin))
+      .addUint256(toBigNumber(params.minAmountA))
+      .addUint256(toBigNumber(params.minAmountB))
       .addAddress(params.recipientEvmAddress)
       .addUint256(deadline);
 
-    const result = api.contract.contractExecuteTransaction({
+    const result = contractService.contractExecuteTransaction({
+      contractId: params.config.routerContractId,
+      gas: params.gas,
+      functionName: 'removeLiquidity',
+      functionParameters,
+    });
+    return { transaction: result.transaction };
+  }
+
+  private buildRemoveLiquidityEthTransaction(
+    contractService: ContractTransactionService,
+    params: SaucerSwapV1WithdrawNormalizedHbarParams,
+    deadline: ReturnType<typeof computeDeadline>,
+  ): SaucerSwapV1WithdrawBuildTransactionResult {
+    const functionParameters = new ContractFunctionParameters()
+      .addAddress(params.tokenEvm)
+      .addUint256(toBigNumber(params.liquidity))
+      .addUint256(toBigNumber(params.tokenMin))
+      .addUint256(toBigNumber(params.hbarMin))
+      .addAddress(params.recipientEvmAddress)
+      .addUint256(deadline);
+
+    const result = contractService.contractExecuteTransaction({
       contractId: params.config.routerContractId,
       gas: params.gas,
       functionName: 'removeLiquidityETH',
@@ -223,8 +267,6 @@ export class SaucerSwapV1WithdrawCommand extends BaseTransactionCommand<
       network: params.network,
       transactionId: execute.transactionResult.transactionId,
       liquidity: params.liquidity.toString(),
-      minAmountA: params.minAmountA.toString(),
-      minAmountB: params.minAmountB.toString(),
     };
     return { result: outputData };
   }

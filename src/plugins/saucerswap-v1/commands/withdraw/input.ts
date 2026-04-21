@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { DeadlineSchema } from '@/shared/schemas/schemas';
 
 /** Typical LP token decimals for Uniswap V2–style pairs (display amounts without `t` suffix). */
-const LP_PAIR_DECIMALS = 18;
+const LP_PAIR_DECIMALS = 8;
 
 export const SaucerSwapV1WithdrawInputSchema = z.object({
   tokenA: TokenReferenceObjectSchema.describe(

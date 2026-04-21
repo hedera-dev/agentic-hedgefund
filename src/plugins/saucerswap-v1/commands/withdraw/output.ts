@@ -6,8 +6,6 @@ export const SaucerSwapV1WithdrawOutputSchema = z.object({
   network: NetworkSchema,
   transactionId: TransactionIdSchema,
   liquidity: z.string(),
-  minAmountA: z.string(),
-  minAmountB: z.string(),
 });
 
 export type SaucerSwapV1WithdrawOutput = z.infer<
@@ -18,6 +16,5 @@ export const SAUCERSWAP_V1_WITHDRAW_TEMPLATE = `
 ✅ Liquidity withdrawn from SaucerSwap V1!
    Contract: {{hashscanLink contractId "contract" network}}
    Liquidity: {{liquidity}}
-   Min A: {{minAmountA}}  Min B: {{minAmountB}}
    Transaction: {{hashscanLink transactionId "transaction" network}}
 `.trim();

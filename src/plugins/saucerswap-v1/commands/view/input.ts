@@ -1,11 +1,10 @@
 import { TokenReferenceObjectSchema } from '@hiero-ledger/hiero-cli';
 import { z } from 'zod';
 
+import { SaucerSwapApiKeySchema } from '@/shared/schemas/schemas';
+
 export const SaucerSwapV1ViewInputSchema = z.object({
-  apiKey: z
-    .string()
-    .min(1)
-    .describe('SaucerSwap API key sent as x-api-key header.'),
+  apiKey: SaucerSwapApiKeySchema,
   tokenA: TokenReferenceObjectSchema.describe(
     'First token (Hedera ID, alias, EVM address, or "HBAR")',
   ),

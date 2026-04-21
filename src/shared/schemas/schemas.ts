@@ -9,6 +9,12 @@ import {
 } from '@hiero-ledger/hiero-cli';
 import { z } from 'zod';
 
+/** SaucerSwap REST API key (CLI option `--api-key` maps to `apiKey`). */
+export const SaucerSwapApiKeySchema = z
+  .string()
+  .min(1)
+  .describe('SaucerSwap API key sent as x-api-key header.');
+
 /**
  * Token shape returned by the SaucerSwap V1 REST API.
  * Kept permissive (passthrough) so unexpected fields are not rejected.

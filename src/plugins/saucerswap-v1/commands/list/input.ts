@@ -1,10 +1,9 @@
 import { z } from 'zod';
 
+import { SaucerSwapApiKeySchema } from '@/shared/schemas/schemas';
+
 export const SaucerSwapV1ListInputSchema = z.object({
-  apiKey: z
-    .string()
-    .min(1)
-    .describe('SaucerSwap API key sent as x-api-key header.'),
+  apiKey: SaucerSwapApiKeySchema,
   token: z
     .string()
     .trim()
