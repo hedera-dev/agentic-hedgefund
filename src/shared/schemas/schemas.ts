@@ -135,9 +135,7 @@ export const SlippageTolerancePercentSchema = z
   .number()
   .min(0)
   .max(100)
-  .optional()
-  .default(0.5)
-  .describe('Slippage tolerance (%)');
+  .optional();
 
 export const DeadlineSchema = z
   .number()

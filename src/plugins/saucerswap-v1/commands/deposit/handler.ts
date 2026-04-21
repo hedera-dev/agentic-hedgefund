@@ -12,6 +12,7 @@ import type {
 
 import { ContractFunctionParameters, Hbar, HbarUnit } from '@hashgraph/sdk';
 import {
+  AliasType,
   BaseTransactionCommand,
   TransactionError,
   ValidationError,
@@ -23,10 +24,10 @@ import { computeDeadline } from '@/shared/util/deadline';
 import { isHbar } from '@/shared/util/hbar-detection';
 import { computeMinOutput } from '@/shared/util/slippage';
 import {
-  accountIdToEvmAddress,
-  resolveTokenToEvm,
-  tokenEvmAddress,
-} from '@/shared/util/token-resolver';
+  isRawUnits,
+  processTokenBalanceInput,
+} from '@/shared/util/token-balance-input';
+import { tokenEvmAddress } from '@/shared/util/token-resolver';
 
 import { SaucerSwapV1DepositInputSchema } from './input';
 
@@ -50,29 +51,58 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
     const network = api.network.getCurrentNetwork();
     const config = getSaucerSwapV1Config(network);
 
-    const aIsHbar = isHbar(validArgs.tokenA, config.whbarTokenId);
-    const bIsHbar = isHbar(validArgs.tokenB, config.whbarTokenId);
+    const aIsHbar = isHbar(validArgs.tokenA.value, config.whbarTokenId);
+    const bIsHbar = isHbar(validArgs.tokenB.value, config.whbarTokenId);
     if (aIsHbar && bIsHbar) {
       throw new ValidationError('Both tokens cannot be HBAR');
     }
 
-    const whbar = tokenEvmAddress(config.whbarTokenId);
-    const tokenAEvm = aIsHbar
-      ? whbar
-      : resolveTokenToEvm(api, validArgs.tokenA, network, config.whbarTokenId)
-          .evmAddress;
-    const tokenBEvm = bIsHbar
-      ? whbar
-      : resolveTokenToEvm(api, validArgs.tokenB, network, config.whbarTokenId)
-          .evmAddress;
+    const fromTokenIdA = aIsHbar
+      ? config.whbarTokenId
+      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
+          entityReference: validArgs.tokenA.value,
+          referenceType: validArgs.tokenA.type,
+          network,
+          aliasType: AliasType.Token,
+        }).entityIdOrEvmAddress;
+    const tokenInfoA = await api.mirror.getTokenInfo(fromTokenIdA);
 
-    const amountA = BigInt(validArgs.amountA);
-    const amountB = BigInt(validArgs.amountB);
+    const fromTokenIdB = bIsHbar
+      ? config.whbarTokenId
+      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
+          entityReference: validArgs.tokenB.value,
+          referenceType: validArgs.tokenB.type,
+          network,
+          aliasType: AliasType.Token,
+        }).entityIdOrEvmAddress;
+    const tokenInfoB = await api.mirror.getTokenInfo(fromTokenIdB);
+
+    const tokenAEvm = tokenEvmAddress(tokenInfoA.token_id);
+    const tokenBEvm = tokenEvmAddress(tokenInfoB.token_id);
+
+    let decA = 0;
+    if (!isRawUnits(validArgs.amountA)) {
+      decA = parseInt(tokenInfoA.decimals, 10) || 0;
+    }
+    const amountA = processTokenBalanceInput(validArgs.amountA, decA);
+
+    let decB = 0;
+    if (!isRawUnits(validArgs.amountB)) {
+      decB = parseInt(tokenInfoB.decimals, 10) || 0;
+    }
+    const amountB = processTokenBalanceInput(validArgs.amountB, decB);
 
     const operator = api.network.getCurrentOperatorOrThrow();
-    const recipient = accountIdToEvmAddress(operator.accountId);
+    const operatorMirrorInfo = await api.mirror.getAccount(operator.accountId);
+    if (!operatorMirrorInfo || !operatorMirrorInfo.evmAddress) {
+      throw new ValidationError(
+        `Couldn't resolve operator account to evm address`,
+      );
+    }
+    const recipient = operatorMirrorInfo.evmAddress;
 
     const hbarSide: 'A' | 'B' | null = aIsHbar ? 'A' : bIsHbar ? 'B' : null;
+    const slippagePct = validArgs.slippage;
 
     return {
       config,
@@ -81,8 +111,8 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
       tokenBEvm,
       amountA,
       amountB,
-      amountAMin: computeMinOutput(amountA, validArgs.slippage),
-      amountBMin: computeMinOutput(amountB, validArgs.slippage),
+      amountAMin: computeMinOutput(amountA, slippagePct),
+      amountBMin: computeMinOutput(amountB, slippagePct),
       recipientEvmAddress: recipient,
       deadlineSeconds: validArgs.deadline,
       gas: validArgs.gas,
@@ -127,6 +157,9 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
       params.hbarSide === 'A' ? params.amountA : params.amountB;
     const hbarMin =
       params.hbarSide === 'A' ? params.amountAMin : params.amountBMin;
+    console.log(tokenDesired);
+    console.log(tokenMin);
+    console.log(hbarMin);
 
     const functionParameters = new ContractFunctionParameters()
       .addAddress(tokenEvm)
@@ -141,10 +174,8 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
       gas: params.gas,
       functionName: 'addLiquidityETH',
       functionParameters,
+      payableAmount: hbarAmount,
     });
-    result.transaction.setPayableAmount(
-      Hbar.from(toBigNumber(hbarAmount), HbarUnit.Tinybar),
-    );
     return { transaction: result.transaction };
   }
 

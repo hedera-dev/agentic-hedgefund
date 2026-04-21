@@ -44,33 +44,36 @@ export const saucerswapV1PluginManifest: PluginManifest = {
       name: 'deposit',
       summary: 'Add liquidity to an existing V1 pool',
       description:
-        'Add liquidity to an existing SaucerSwap V1 pool. Automatically routes HBAR/token or token/token based on the arguments.',
+        'Add liquidity to an existing SaucerSwap V1 pool. Routes HBAR/token or token/token from token references (ID, alias, EVM address, or HBAR). Amounts support display units or raw base units with a "t" suffix.',
       options: [
         {
           name: 'token-a',
           short: 'a',
           type: OptionType.STRING,
           required: true,
-          description: 'First token (Hedera ID, alias, EVM address, or HBAR)',
+          description: 'First token (Hedera ID, alias, EVM address, or "HBAR")',
         },
         {
           name: 'token-b',
           short: 'b',
           type: OptionType.STRING,
           required: true,
-          description: 'Second token',
+          description:
+            'Second token (Hedera ID, alias, EVM address, or "HBAR")',
         },
         {
           name: 'amount-a',
           type: OptionType.STRING,
           required: true,
-          description: 'Desired amount of token A (smallest units)',
+          description:
+            'Desired amount of token A (display units or base units with "t" suffix)',
         },
         {
           name: 'amount-b',
           type: OptionType.STRING,
           required: true,
-          description: 'Desired amount of token B (smallest units)',
+          description:
+            'Desired amount of token B (display units or base units with "t" suffix)',
         },
         {
           name: 'slippage',
@@ -86,14 +89,14 @@ export const saucerswapV1PluginManifest: PluginManifest = {
           type: OptionType.NUMBER,
           required: false,
           default: 180,
-          description: 'Deadline seconds',
+          description: 'Deadline in seconds from current time',
         },
         {
           name: 'gas',
           short: 'g',
           type: OptionType.NUMBER,
           required: false,
-          default: 240000,
+          default: 1_000_000,
           description: 'Gas limit',
         },
         {
@@ -101,7 +104,7 @@ export const saucerswapV1PluginManifest: PluginManifest = {
           short: 'k',
           type: OptionType.STRING,
           required: false,
-          description: 'Key manager override',
+          description: 'Key manager type (defaults to config setting)',
         },
       ],
       handler: saucerswapV1Deposit,
@@ -114,40 +117,44 @@ export const saucerswapV1PluginManifest: PluginManifest = {
       name: 'withdraw',
       summary: 'Remove liquidity from a V1 pool',
       description:
-        'Remove liquidity from an existing SaucerSwap V1 pool. Automatically routes HBAR/token or token/token.',
+        'Remove liquidity from an existing SaucerSwap V1 pool. Token arguments are Hedera entity references. LP amount: display units assume 18 decimals for the pair LP token unless you use a "t" suffix for raw units.',
       options: [
         {
           name: 'token-a',
           short: 'a',
           type: OptionType.STRING,
           required: true,
-          description: 'First token',
+          description: 'First token (Hedera ID, alias, EVM address, or "HBAR")',
         },
         {
           name: 'token-b',
           short: 'b',
           type: OptionType.STRING,
           required: true,
-          description: 'Second token',
+          description:
+            'Second token (Hedera ID, alias, EVM address, or "HBAR")',
         },
         {
           name: 'liquidity',
           short: 'l',
           type: OptionType.STRING,
           required: true,
-          description: 'LP token amount to remove',
+          description:
+            'LP amount to remove (display uses 18 decimals, or raw with "t" suffix)',
         },
         {
           name: 'min-amount-a',
           type: OptionType.STRING,
           required: false,
-          description: 'Minimum token A returned',
+          description:
+            'Minimum token A returned (display units or base units with "t" suffix)',
         },
         {
           name: 'min-amount-b',
           type: OptionType.STRING,
           required: false,
-          description: 'Minimum token B returned',
+          description:
+            'Minimum token B returned (display units or base units with "t" suffix)',
         },
         {
           name: 'deadline',
@@ -155,14 +162,14 @@ export const saucerswapV1PluginManifest: PluginManifest = {
           type: OptionType.NUMBER,
           required: false,
           default: 180,
-          description: 'Deadline seconds',
+          description: 'Deadline in seconds from current time',
         },
         {
           name: 'gas',
           short: 'g',
           type: OptionType.NUMBER,
           required: false,
-          default: 2800000,
+          default: 2_800_000,
           description: 'Gas limit',
         },
         {
@@ -170,7 +177,7 @@ export const saucerswapV1PluginManifest: PluginManifest = {
           short: 'k',
           type: OptionType.STRING,
           required: false,
-          description: 'Key manager override',
+          description: 'Key manager type (defaults to config setting)',
         },
       ],
       handler: saucerswapV1Withdraw,
@@ -210,6 +217,7 @@ export const saucerswapV1PluginManifest: PluginManifest = {
         },
         {
           name: 'min-output',
+          short: 'm',
           type: OptionType.STRING,
           required: false,
           description:
@@ -257,34 +265,46 @@ export const saucerswapV1PluginManifest: PluginManifest = {
       name: 'buy',
       summary: 'Swap up to a maximum input for exact output',
       description:
-        'Buy a specific amount of an output token, spending up to a given max input amount.',
+        'Buy a specific amount of an output token. Optionally cap input with --max-input; if omitted, the max input is derived via getAmountsIn on the router with your slippage tolerance. Token arguments are Hedera entity references (ID, alias, EVM address, or HBAR).',
       options: [
         {
           name: 'from',
           short: 'f',
           type: OptionType.STRING,
           required: true,
-          description: 'Input token',
+          description: 'Input token (Hedera ID, alias, EVM address, or "HBAR")',
         },
         {
           name: 'to',
           short: 't',
           type: OptionType.STRING,
           required: true,
-          description: 'Output token',
+          description:
+            'Output token (Hedera ID, alias, EVM address, or "HBAR")',
         },
         {
           name: 'amount',
           short: 'a',
           type: OptionType.STRING,
           required: true,
-          description: 'Exact output amount desired',
+          description:
+            'Exact output amount (display units or base units with "t" suffix)',
         },
         {
           name: 'max-input',
+          short: 'm',
           type: OptionType.STRING,
-          required: true,
-          description: 'Maximum input amount willing to spend',
+          required: false,
+          description:
+            'Maximum input willing to spend (display or base units with "t" suffix). When omitted, computed via getAmountsIn with slippage tolerance.',
+        },
+        {
+          name: 'slippage',
+          short: 's',
+          type: OptionType.NUMBER,
+          required: false,
+          default: 0,
+          description: 'Slippage tolerance (%)',
         },
         {
           name: 'deadline',
@@ -292,14 +312,14 @@ export const saucerswapV1PluginManifest: PluginManifest = {
           type: OptionType.NUMBER,
           required: false,
           default: 180,
-          description: 'Deadline seconds',
+          description: 'Deadline in seconds from current time',
         },
         {
           name: 'gas',
           short: 'g',
           type: OptionType.NUMBER,
           required: false,
-          default: 250000,
+          default: 1_000_000,
           description: 'Gas limit',
         },
         {
@@ -307,7 +327,7 @@ export const saucerswapV1PluginManifest: PluginManifest = {
           short: 'k',
           type: OptionType.STRING,
           required: false,
-          description: 'Key manager override',
+          description: 'Key manager type (defaults to config setting)',
         },
       ],
       handler: saucerswapV1Buy,
@@ -320,14 +340,21 @@ export const saucerswapV1PluginManifest: PluginManifest = {
       name: 'list',
       summary: 'List SaucerSwap V1 pools',
       description:
-        'List pools from the SaucerSwap V1 REST API, optionally filtered by a token.',
+        'List pools from the SaucerSwap V1 REST API, optionally filtered by token ID, symbol, or name.',
       options: [
+        {
+          name: 'api-key',
+          type: OptionType.STRING,
+          required: true,
+          description: 'SaucerSwap API key (sent as x-api-key header)',
+        },
         {
           name: 'token',
           short: 't',
           type: OptionType.STRING,
           required: false,
-          description: 'Filter pools containing this token (ID or symbol)',
+          description:
+            'Filter pools containing this token (ID, symbol, or name substring)',
         },
       ],
       handler: saucerswapV1List,
@@ -340,21 +367,28 @@ export const saucerswapV1PluginManifest: PluginManifest = {
       name: 'view',
       summary: 'Show details of a specific V1 pool',
       description:
-        'Fetch pool metadata from SaucerSwap V1 REST API by the two tokens in the pair.',
+        'Load pool data for a token pair from the SaucerSwap V1 REST API (reserves, contract id, LP token id if listed).',
       options: [
+        {
+          name: 'api-key',
+          type: OptionType.STRING,
+          required: true,
+          description: 'SaucerSwap API key (sent as x-api-key header)',
+        },
         {
           name: 'token-a',
           short: 'a',
           type: OptionType.STRING,
           required: true,
-          description: 'First token',
+          description: 'First token (Hedera ID, alias, EVM address, or "HBAR")',
         },
         {
           name: 'token-b',
           short: 'b',
           type: OptionType.STRING,
           required: true,
-          description: 'Second token',
+          description:
+            'Second token (Hedera ID, alias, EVM address, or "HBAR")',
         },
       ],
       handler: saucerswapV1View,

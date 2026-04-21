@@ -24,7 +24,9 @@ export const SaucerSwapV1SwapInputSchema = z.object({
   minOutput: AmountInputSchema.optional().describe(
     'Minimum output amount (display units or base units with "t" suffix).',
   ),
-  slippage: SlippageTolerancePercentSchema,
+  slippage: SlippageTolerancePercentSchema.default(0.5).describe(
+    'Slippage tolerance (%)',
+  ),
   deadline: DeadlineSchema,
   gas: GasInputSchema.default(1000000).describe('Gas limit'),
   keyManager: KeyManagerTypeSchema.optional().describe(

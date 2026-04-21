@@ -12,6 +12,7 @@ import type {
 
 import { ContractFunctionParameters } from '@hashgraph/sdk';
 import {
+  AliasType,
   BaseTransactionCommand,
   TransactionError,
   ValidationError,
@@ -22,12 +23,15 @@ import { toBigNumber } from '@/shared/util/bignum';
 import { computeDeadline } from '@/shared/util/deadline';
 import { isHbar } from '@/shared/util/hbar-detection';
 import {
-  accountIdToEvmAddress,
-  resolveTokenToEvm,
-  tokenEvmAddress,
-} from '@/shared/util/token-resolver';
+  isRawUnits,
+  processTokenBalanceInput,
+} from '@/shared/util/token-balance-input';
+import { tokenEvmAddress } from '@/shared/util/token-resolver';
 
 import { SaucerSwapV1WithdrawInputSchema } from './input';
+
+/** Display liquidity amounts without `t` assume this many decimals (common for V2 LP tokens). */
+const LP_TOKEN_DISPLAY_DECIMALS = 18;
 
 export const SAUCERSWAP_V1_WITHDRAW_COMMAND_NAME = 'saucerswap-v1_withdraw';
 
@@ -49,33 +53,79 @@ export class SaucerSwapV1WithdrawCommand extends BaseTransactionCommand<
     const network = api.network.getCurrentNetwork();
     const config = getSaucerSwapV1Config(network);
 
-    const aIsHbar = isHbar(validArgs.tokenA, config.whbarTokenId);
-    const bIsHbar = isHbar(validArgs.tokenB, config.whbarTokenId);
+    const aIsHbar = isHbar(validArgs.tokenA.value, config.whbarTokenId);
+    const bIsHbar = isHbar(validArgs.tokenB.value, config.whbarTokenId);
     if (aIsHbar && bIsHbar) {
       throw new ValidationError('Both tokens cannot be HBAR');
     }
 
-    const whbar = tokenEvmAddress(config.whbarTokenId);
-    const tokenAEvm = aIsHbar
-      ? whbar
-      : resolveTokenToEvm(api, validArgs.tokenA, network, config.whbarTokenId)
-          .evmAddress;
-    const tokenBEvm = bIsHbar
-      ? whbar
-      : resolveTokenToEvm(api, validArgs.tokenB, network, config.whbarTokenId)
-          .evmAddress;
+    const fromTokenIdA = aIsHbar
+      ? config.whbarTokenId
+      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
+          entityReference: validArgs.tokenA.value,
+          referenceType: validArgs.tokenA.type,
+          network,
+          aliasType: AliasType.Token,
+        }).entityIdOrEvmAddress;
+    const tokenInfoA = await api.mirror.getTokenInfo(fromTokenIdA);
+
+    const fromTokenIdB = bIsHbar
+      ? config.whbarTokenId
+      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
+          entityReference: validArgs.tokenB.value,
+          referenceType: validArgs.tokenB.type,
+          network,
+          aliasType: AliasType.Token,
+        }).entityIdOrEvmAddress;
+    const tokenInfoB = await api.mirror.getTokenInfo(fromTokenIdB);
+
+    const tokenAEvm = tokenEvmAddress(tokenInfoA.token_id);
+    const tokenBEvm = tokenEvmAddress(tokenInfoB.token_id);
+
+    let liqDecimals = 0;
+    if (!isRawUnits(validArgs.liquidity)) {
+      liqDecimals = LP_TOKEN_DISPLAY_DECIMALS;
+    }
+    const liquidity = processTokenBalanceInput(
+      validArgs.liquidity,
+      liqDecimals,
+    );
+
+    let minAmountA = 0n;
+    if (validArgs.minAmountA !== undefined) {
+      let d = 0;
+      if (!isRawUnits(validArgs.minAmountA)) {
+        d = parseInt(tokenInfoA.decimals, 10) || 0;
+      }
+      minAmountA = processTokenBalanceInput(validArgs.minAmountA, d);
+    }
+
+    let minAmountB = 0n;
+    if (validArgs.minAmountB !== undefined) {
+      let d = 0;
+      if (!isRawUnits(validArgs.minAmountB)) {
+        d = parseInt(tokenInfoB.decimals, 10) || 0;
+      }
+      minAmountB = processTokenBalanceInput(validArgs.minAmountB, d);
+    }
 
     const operator = api.network.getCurrentOperatorOrThrow();
-    const recipient = accountIdToEvmAddress(operator.accountId);
+    const operatorMirrorInfo = await api.mirror.getAccount(operator.accountId);
+    if (!operatorMirrorInfo || !operatorMirrorInfo.evmAddress) {
+      throw new ValidationError(
+        `Couldn't resolve operator account to evm address`,
+      );
+    }
+    const recipient = operatorMirrorInfo.evmAddress;
 
     return {
       config,
       hbarSide: aIsHbar ? 'A' : bIsHbar ? 'B' : null,
       tokenAEvm,
       tokenBEvm,
-      liquidity: BigInt(validArgs.liquidity),
-      minAmountA: BigInt(validArgs.minAmountA ?? '0'),
-      minAmountB: BigInt(validArgs.minAmountB ?? '0'),
+      liquidity,
+      minAmountA,
+      minAmountB,
       recipientEvmAddress: recipient,
       deadlineSeconds: validArgs.deadline,
       gas: validArgs.gas,

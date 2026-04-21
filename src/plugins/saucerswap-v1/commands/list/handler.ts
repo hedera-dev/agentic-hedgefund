@@ -20,7 +20,10 @@ export class SaucerSwapV1ListCommand implements Command {
     const network = api.network.getCurrentNetwork();
     const config = getSaucerSwapV1Config(network);
 
-    const pools = await this.saucerSwapApi.fetchAllPools(config.apiBaseUrl);
+    const pools = await this.saucerSwapApi.fetchAllPools(
+      config.apiBaseUrl,
+      validArgs.apiKey,
+    );
 
     const filtered = validArgs.token
       ? pools.filter((p) => matchesTokenFilter(p, validArgs.token!))

@@ -13,21 +13,24 @@ import type {
 
 import { ContractFunctionParameters } from '@hashgraph/sdk';
 import {
+  AliasType,
   BaseTransactionCommand,
   TransactionError,
+  ValidationError,
 } from '@hiero-ledger/hiero-cli';
 
 import { SwapDirection } from '@/plugins/saucerswap-v1/commands/swap/types';
 import { getSaucerSwapV1Config } from '@/plugins/saucerswap-v1/constants';
+import { SaucerSwapV1Helper } from '@/plugins/saucerswap-v1/saucerswap-helper';
 import { resolveSwapDirection } from '@/plugins/saucerswap-v1/utils/resolve-swap-direction';
 import { toBigNumber } from '@/shared/util/bignum';
 import { computeDeadline } from '@/shared/util/deadline';
 import { isHbar } from '@/shared/util/hbar-detection';
 import {
-  accountIdToEvmAddress,
-  resolveTokenToEvm,
-  tokenEvmAddress,
-} from '@/shared/util/token-resolver';
+  isRawUnits,
+  processTokenBalanceInput,
+} from '@/shared/util/token-balance-input';
+import { tokenEvmAddress } from '@/shared/util/token-resolver';
 
 import { SaucerSwapV1BuyInputSchema } from './input';
 
@@ -39,8 +42,11 @@ export class SaucerSwapV1BuyCommand extends BaseTransactionCommand<
   SaucerSwapV1BuySignTransactionResult,
   SaucerSwapV1BuyExecuteTransactionResult
 > {
-  constructor() {
+  private readonly saucerSwapHelper: SaucerSwapV1Helper;
+
+  constructor(saucerSwapHelper: SaucerSwapV1Helper) {
     super(SAUCERSWAP_V1_BUY_COMMAND_NAME);
+    this.saucerSwapHelper = saucerSwapHelper;
   }
 
   async normalizeParams(
@@ -56,26 +62,70 @@ export class SaucerSwapV1BuyCommand extends BaseTransactionCommand<
       validArgs.to,
       config.whbarTokenId,
     );
-    const whbar = tokenEvmAddress(config.whbarTokenId);
-    const fromEvm = isHbar(validArgs.from, config.whbarTokenId)
-      ? whbar
-      : resolveTokenToEvm(api, validArgs.from, network, config.whbarTokenId)
-          .evmAddress;
-    const toEvm = isHbar(validArgs.to, config.whbarTokenId)
-      ? whbar
-      : resolveTokenToEvm(api, validArgs.to, network, config.whbarTokenId)
-          .evmAddress;
+
+    const fromTokenId = isHbar(validArgs.from.value, config.whbarTokenId)
+      ? config.whbarTokenId
+      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
+          entityReference: validArgs.from.value,
+          referenceType: validArgs.from.type,
+          network,
+          aliasType: AliasType.Token,
+        }).entityIdOrEvmAddress;
+    const fromTokenInfo = await api.mirror.getTokenInfo(fromTokenId);
+    const toTokenId = isHbar(validArgs.to.value, config.whbarTokenId)
+      ? config.whbarTokenId
+      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
+          entityReference: validArgs.to.value,
+          referenceType: validArgs.to.type,
+          network,
+          aliasType: AliasType.Token,
+        }).entityIdOrEvmAddress;
+    const toTokenInfo = await api.mirror.getTokenInfo(toTokenId);
+
+    const fromEvm = tokenEvmAddress(fromTokenInfo.token_id);
+    const toEvm = tokenEvmAddress(toTokenInfo.token_id);
 
     const operator = api.network.getCurrentOperatorOrThrow();
-    const recipient = accountIdToEvmAddress(operator.accountId);
+    const operatorMirrorInfo = await api.mirror.getAccount(operator.accountId);
+    if (!operatorMirrorInfo || !operatorMirrorInfo.evmAddress) {
+      throw new ValidationError(
+        `Couldn't resolve operator account to evm address`,
+      );
+    }
+    const recipient = operatorMirrorInfo.evmAddress;
+
+    let toDecimals = 0;
+    if (!isRawUnits(validArgs.amount)) {
+      toDecimals = parseInt(toTokenInfo.decimals, 10) || 0;
+    }
+    const rawAmountOut = processTokenBalanceInput(validArgs.amount, toDecimals);
+
+    let rawAmountInMax: bigint;
+    if (validArgs.maxInput !== undefined) {
+      let fromDecimals = 0;
+      if (!isRawUnits(validArgs.maxInput)) {
+        fromDecimals = parseInt(fromTokenInfo.decimals, 10) || 0;
+      }
+      rawAmountInMax = processTokenBalanceInput(
+        validArgs.maxInput,
+        fromDecimals,
+      );
+    } else {
+      rawAmountInMax = await this.saucerSwapHelper.computeAmountInMax(
+        config.routerContractId,
+        rawAmountOut,
+        [fromEvm, toEvm],
+        validArgs.slippage,
+      );
+    }
 
     return {
       config,
       direction,
       path: [fromEvm, toEvm],
       recipientEvmAddress: recipient,
-      amountOut: BigInt(validArgs.amount),
-      amountInMax: BigInt(validArgs.maxInput),
+      amountOut: rawAmountOut,
+      amountInMax: rawAmountInMax,
       deadlineSeconds: validArgs.deadline,
       gas: validArgs.gas,
       network,
@@ -213,5 +263,7 @@ export class SaucerSwapV1BuyCommand extends BaseTransactionCommand<
 export async function saucerswapV1Buy(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  return new SaucerSwapV1BuyCommand().execute(args);
+  return new SaucerSwapV1BuyCommand(
+    new SaucerSwapV1Helper(args.api.contractQuery, args.api.contract),
+  ).execute(args);
 }
