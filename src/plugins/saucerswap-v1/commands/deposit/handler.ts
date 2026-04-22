@@ -60,40 +60,23 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
       throw new ValidationError('Both tokens cannot be HBAR');
     }
 
-    const fromTokenIdA = aIsHbar
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.tokenA.value,
-          referenceType: validArgs.tokenA.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-    const tokenInfoA = await api.mirror.getTokenInfo(fromTokenIdA);
+    const resolveTokenId = (
+      ref: typeof validArgs.tokenA,
+      refIsHbar: boolean,
+    ) =>
+      refIsHbar
+        ? config.whbarTokenId
+        : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
+            entityReference: ref.value,
+            referenceType: ref.type,
+            network,
+            aliasType: AliasType.Token,
+          }).entityIdOrEvmAddress;
 
-    const fromTokenIdB = bIsHbar
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.tokenB.value,
-          referenceType: validArgs.tokenB.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-    const tokenInfoB = await api.mirror.getTokenInfo(fromTokenIdB);
-
-    const tokenAEvm = tokenEvmAddress(tokenInfoA.token_id);
-    const tokenBEvm = tokenEvmAddress(tokenInfoB.token_id);
-
-    let decA = 0;
-    if (!isRawUnits(validArgs.amountA)) {
-      decA = parseInt(tokenInfoA.decimals, 10) || 0;
-    }
-    const amountA = processTokenBalanceInput(validArgs.amountA, decA);
-
-    let decB = 0;
-    if (!isRawUnits(validArgs.amountB)) {
-      decB = parseInt(tokenInfoB.decimals, 10) || 0;
-    }
-    const amountB = processTokenBalanceInput(validArgs.amountB, decB);
+    const [tokenInfoA, tokenInfoB] = await Promise.all([
+      api.mirror.getTokenInfo(resolveTokenId(validArgs.tokenA, aIsHbar)),
+      api.mirror.getTokenInfo(resolveTokenId(validArgs.tokenB, bIsHbar)),
+    ]);
 
     const operator = api.network.getCurrentOperatorOrThrow();
     const operatorMirrorInfo = await api.mirror.getAccount(operator.accountId);
@@ -104,54 +87,62 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
     }
     const recipient = operatorMirrorInfo.evmAddress;
 
+    const tokenAEvm = tokenEvmAddress(tokenInfoA.token_id);
+    const tokenBEvm = tokenEvmAddress(tokenInfoB.token_id);
+
+    const resolveAmount = (amount: string, decimals: string) =>
+      processTokenBalanceInput(
+        amount,
+        isRawUnits(amount) ? 0 : parseInt(decimals, 10) || 0,
+      );
+
+    const amountA = resolveAmount(validArgs.amountA, tokenInfoA.decimals);
+    const amountB = resolveAmount(validArgs.amountB, tokenInfoB.decimals);
     const slippagePct = validArgs.slippage;
 
-    if (aIsHbar) {
+    const common = {
+      config,
+      recipientEvmAddress: recipient,
+      deadlineSeconds: validArgs.deadline,
+      gas: validArgs.gas,
+      network,
+    };
+
+    // Minimums are computed as desiredAmount * (1 - slippage) for each side
+    // independently. This guards against adverse price movement during the tx
+    // (the router will revert if the actual transferred amount falls below either
+    // floor), but it does NOT prevent depositing at a skewed ratio if the pool
+    // has drifted since the user quoted. UniswapV2's addLiquidity always deposits
+    // at the current pool ratio; if that ratio has shifted significantly, one
+    // side will be much smaller than desired and the other fully consumed.
+    // For tighter protection, callers should query getReserves() on the pair
+    // first, compute the ratio-adjusted amounts, and apply slippage to those.
+    if (aIsHbar || bIsHbar) {
+      const [tokenEvm, hbarEvm, tokenAmount, hbarAmount] = aIsHbar
+        ? [tokenBEvm, tokenAEvm, amountB, amountA]
+        : [tokenAEvm, tokenBEvm, amountA, amountB];
       return {
-        config,
+        ...common,
         isHbar: true,
-        tokenEvm: tokenBEvm,
-        hbarEvm: tokenAEvm,
-        tokenAmount: amountB,
-        hbarAmount: amountA,
-        tokenMin: computeMinOutput(amountB, slippagePct),
-        hbarMin: computeMinOutput(amountA, slippagePct),
-        recipientEvmAddress: recipient,
-        deadlineSeconds: validArgs.deadline,
-        gas: validArgs.gas,
-        network,
-      };
-    } else if (bIsHbar) {
-      return {
-        config,
-        isHbar: true,
-        tokenEvm: tokenAEvm,
-        hbarEvm: tokenBEvm,
-        tokenAmount: amountA,
-        hbarAmount: amountB,
-        tokenMin: computeMinOutput(amountA, slippagePct),
-        hbarMin: computeMinOutput(amountB, slippagePct),
-        recipientEvmAddress: recipient,
-        deadlineSeconds: validArgs.deadline,
-        gas: validArgs.gas,
-        network,
-      };
-    } else {
-      return {
-        config,
-        isHbar: false,
-        tokenAEvm,
-        tokenBEvm,
-        amountA,
-        amountB,
-        amountAMin: computeMinOutput(amountA, slippagePct),
-        amountBMin: computeMinOutput(amountB, slippagePct),
-        recipientEvmAddress: recipient,
-        deadlineSeconds: validArgs.deadline,
-        gas: validArgs.gas,
-        network,
+        tokenEvm,
+        hbarEvm,
+        tokenAmount,
+        hbarAmount,
+        tokenMin: computeMinOutput(tokenAmount, slippagePct),
+        hbarMin: computeMinOutput(hbarAmount, slippagePct),
       };
     }
+
+    return {
+      ...common,
+      isHbar: false,
+      tokenAEvm,
+      tokenBEvm,
+      amountA,
+      amountB,
+      amountAMin: computeMinOutput(amountA, slippagePct),
+      amountBMin: computeMinOutput(amountB, slippagePct),
+    };
   }
 
   async buildTransaction(

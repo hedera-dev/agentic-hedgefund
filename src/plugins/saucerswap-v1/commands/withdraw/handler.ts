@@ -63,55 +63,23 @@ export class SaucerSwapV1WithdrawCommand extends BaseTransactionCommand<
       throw new ValidationError('Both tokens cannot be HBAR');
     }
 
-    const fromTokenIdA = aIsHbar
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.tokenA.value,
-          referenceType: validArgs.tokenA.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-    const tokenInfoA = await api.mirror.getTokenInfo(fromTokenIdA);
+    const resolveTokenId = (
+      ref: typeof validArgs.tokenA,
+      refIsHbar: boolean,
+    ) =>
+      refIsHbar
+        ? config.whbarTokenId
+        : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
+            entityReference: ref.value,
+            referenceType: ref.type,
+            network,
+            aliasType: AliasType.Token,
+          }).entityIdOrEvmAddress;
 
-    const fromTokenIdB = bIsHbar
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.tokenB.value,
-          referenceType: validArgs.tokenB.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-    const tokenInfoB = await api.mirror.getTokenInfo(fromTokenIdB);
-
-    const tokenAEvm = tokenEvmAddress(tokenInfoA.token_id);
-    const tokenBEvm = tokenEvmAddress(tokenInfoB.token_id);
-
-    let liqDecimals = 0;
-    if (!isRawUnits(validArgs.liquidity)) {
-      liqDecimals = LP_TOKEN_DISPLAY_DECIMALS;
-    }
-    const liquidity = processTokenBalanceInput(
-      validArgs.liquidity,
-      liqDecimals,
-    );
-
-    let minAmountA = 0n;
-    if (validArgs.minAmountA !== undefined) {
-      let d = 0;
-      if (!isRawUnits(validArgs.minAmountA)) {
-        d = parseInt(tokenInfoA.decimals, 10) || 0;
-      }
-      minAmountA = processTokenBalanceInput(validArgs.minAmountA, d);
-    }
-
-    let minAmountB = 0n;
-    if (validArgs.minAmountB !== undefined) {
-      let d = 0;
-      if (!isRawUnits(validArgs.minAmountB)) {
-        d = parseInt(tokenInfoB.decimals, 10) || 0;
-      }
-      minAmountB = processTokenBalanceInput(validArgs.minAmountB, d);
-    }
+    const [tokenInfoA, tokenInfoB] = await Promise.all([
+      api.mirror.getTokenInfo(resolveTokenId(validArgs.tokenA, aIsHbar)),
+      api.mirror.getTokenInfo(resolveTokenId(validArgs.tokenB, bIsHbar)),
+    ]);
 
     const operator = api.network.getCurrentOperatorOrThrow();
     const operatorMirrorInfo = await api.mirror.getAccount(operator.accountId);
@@ -122,46 +90,59 @@ export class SaucerSwapV1WithdrawCommand extends BaseTransactionCommand<
     }
     const recipient = operatorMirrorInfo.evmAddress;
 
-    if (aIsHbar) {
-      return {
-        config,
-        isHbar: true,
-        tokenEvm: tokenBEvm,
-        liquidity,
-        tokenMin: minAmountB,
-        hbarMin: minAmountA,
-        recipientEvmAddress: recipient,
-        deadlineSeconds: validArgs.deadline,
-        gas: validArgs.gas,
-        network,
-      };
-    } else if (bIsHbar) {
-      return {
-        config,
-        isHbar: true,
-        tokenEvm: tokenAEvm,
-        liquidity,
-        tokenMin: minAmountA,
-        hbarMin: minAmountB,
-        recipientEvmAddress: recipient,
-        deadlineSeconds: validArgs.deadline,
-        gas: validArgs.gas,
-        network,
-      };
-    }
+    const tokenAEvm = tokenEvmAddress(tokenInfoA.token_id);
+    const tokenBEvm = tokenEvmAddress(tokenInfoB.token_id);
 
-    return {
+    const resolveMinAmount = (
+      amount: string | undefined,
+      decimals: string,
+    ): bigint =>
+      amount === undefined
+        ? 0n
+        : processTokenBalanceInput(
+            amount,
+            isRawUnits(amount) ? 0 : parseInt(decimals, 10) || 0,
+          );
+
+    const liquidity = processTokenBalanceInput(
+      validArgs.liquidity,
+      isRawUnits(validArgs.liquidity) ? 0 : LP_TOKEN_DISPLAY_DECIMALS,
+    );
+    const minAmountA = resolveMinAmount(
+      validArgs.minAmountA,
+      tokenInfoA.decimals,
+    );
+    const minAmountB = resolveMinAmount(
+      validArgs.minAmountB,
+      tokenInfoB.decimals,
+    );
+
+    const common = {
       config,
-      isHbar: false,
-      tokenAEvm,
-      tokenBEvm,
       liquidity,
-      minAmountA,
-      minAmountB,
       recipientEvmAddress: recipient,
       deadlineSeconds: validArgs.deadline,
       gas: validArgs.gas,
       network,
+    };
+
+    if (aIsHbar || bIsHbar) {
+      return {
+        ...common,
+        isHbar: true,
+        tokenEvm: aIsHbar ? tokenBEvm : tokenAEvm,
+        tokenMin: aIsHbar ? minAmountB : minAmountA,
+        hbarMin: aIsHbar ? minAmountA : minAmountB,
+      };
+    }
+
+    return {
+      ...common,
+      isHbar: false,
+      tokenAEvm,
+      tokenBEvm,
+      minAmountA,
+      minAmountB,
     };
   }
 
