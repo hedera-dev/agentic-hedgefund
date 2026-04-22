@@ -97,7 +97,7 @@ export class SaucerSwapV2SwapCommand extends BaseTransactionCommand<
 
     let fromDecimals = 0;
     if (!isRawUnits(validArgs.amount)) {
-      fromDecimals = parseInt(fromInfo.decimals) || 0;
+      fromDecimals = parseInt(fromInfo.decimals, 10) || 0;
     }
     const amountIn = processTokenBalanceInput(validArgs.amount, fromDecimals);
 
@@ -105,7 +105,7 @@ export class SaucerSwapV2SwapCommand extends BaseTransactionCommand<
     if (validArgs.minOutput !== undefined) {
       let toDec = 0;
       if (!isRawUnits(validArgs.minOutput)) {
-        toDec = parseInt(toInfo.decimals) || 0;
+        toDec = parseInt(toInfo.decimals, 10) || 0;
       }
       amountOutMin = processTokenBalanceInput(validArgs.minOutput, toDec);
     } else {
