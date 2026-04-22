@@ -29,7 +29,7 @@ import {
   isRawUnits,
   processTokenBalanceInput,
 } from '@/shared/util/token-balance-input';
-import { tokenEvmAddress } from '@/shared/util/token-resolver';
+import { tokenEvmAddress } from '@/shared/util/token-evm';
 
 import { SaucerSwapV1SwapInputSchema } from './input';
 import { SwapDirection } from './types';
