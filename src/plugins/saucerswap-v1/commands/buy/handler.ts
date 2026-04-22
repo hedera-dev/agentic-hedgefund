@@ -19,7 +19,7 @@ import {
   ValidationError,
 } from '@hiero-ledger/hiero-cli';
 
-import { SwapDirection } from '@/plugins/saucerswap-v1/commands/swap/types';
+import { SwapDirection } from '@/shared/types/shared.types';
 import { getSaucerSwapV1Config } from '@/plugins/saucerswap-v1/constants';
 import { SaucerSwapV1Helper } from '@/plugins/saucerswap-v1/saucerswap-helper';
 import { resolveSwapDirection } from '@/plugins/saucerswap-v1/utils/resolve-swap-direction';

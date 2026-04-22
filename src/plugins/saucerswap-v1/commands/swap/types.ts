@@ -4,12 +4,7 @@ import type {
   TransactionResult,
 } from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapNetworkConfig } from '@/plugins/saucerswap-v1/constants';
-
-export enum SwapDirection {
-  HBAR_FOR_TOKEN = 'HBAR_FOR_TOKEN',
-  TOKEN_FOR_HBAR = 'TOKEN_FOR_HBAR',
-  TOKEN_FOR_TOKEN = 'TOKEN_FOR_TOKEN',
-}
+import { SwapDirection } from '@/shared/types/shared.types';
 
 export interface SaucerSwapV1SwapNormalizedParams {
   config: SaucerSwapNetworkConfig;
