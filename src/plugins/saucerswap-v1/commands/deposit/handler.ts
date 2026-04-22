@@ -208,7 +208,7 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
       gas: params.gas,
       functionName: 'addLiquidityETH',
       functionParameters,
-      payableAmount: params.hbarAmount,
+      payableAmountTinybars: String(params.hbarAmount),
     });
     return { transaction: result.transaction };
   }

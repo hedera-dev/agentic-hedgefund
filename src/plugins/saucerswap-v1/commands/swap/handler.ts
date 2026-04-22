@@ -212,7 +212,7 @@ export class SaucerSwapV1SwapCommand extends BaseTransactionCommand<
       gas: params.gas,
       functionName: 'swapExactETHForTokens',
       functionParameters,
-      payableAmount: params.amountIn,
+      payableAmountTinybars: String(params.amountIn),
     });
     return { transaction: result.transaction };
   }
