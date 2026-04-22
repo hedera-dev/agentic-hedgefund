@@ -117,7 +117,7 @@ export const saucerswapV1PluginManifest: PluginManifest = {
       name: 'withdraw',
       summary: 'Remove liquidity from a V1 pool',
       description:
-        'Remove liquidity from an existing SaucerSwap V1 pool. Token arguments are Hedera entity references. LP amount: display units assume 18 decimals for the pair LP token unless you use a "t" suffix for raw units.',
+        'Remove liquidity from an existing SaucerSwap V1 pool. Token arguments are Hedera entity references. LP amount: display units assume 8 decimals for the pair LP token unless you use a "t" suffix for raw units.',
       options: [
         {
           name: 'token-a',
@@ -140,7 +140,7 @@ export const saucerswapV1PluginManifest: PluginManifest = {
           type: OptionType.STRING,
           required: true,
           description:
-            'LP amount to remove (display uses 18 decimals, or raw with "t" suffix)',
+            'LP amount to remove (display uses 8 decimals, or raw with "t" suffix)',
         },
         {
           name: 'min-amount-a',

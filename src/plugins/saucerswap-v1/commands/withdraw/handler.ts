@@ -21,7 +21,10 @@ import {
   ValidationError,
 } from '@hiero-ledger/hiero-cli';
 
-import { getSaucerSwapV1Config } from '@/plugins/saucerswap-v1/constants';
+import {
+  getSaucerSwapV1Config,
+  LP_TOKEN_DISPLAY_DECIMALS,
+} from '@/plugins/saucerswap-v1/constants';
 import { toBigNumber } from '@/shared/util/bignum';
 import { computeDeadline } from '@/shared/util/deadline';
 import { isHbar } from '@/shared/util/hbar-detection';
@@ -33,7 +36,6 @@ import { tokenEvmAddress } from '@/shared/util/token-evm';
 
 import { SaucerSwapV1WithdrawInputSchema } from './input';
 
-const LP_TOKEN_DISPLAY_DECIMALS = 8;
 
 export const SAUCERSWAP_V1_WITHDRAW_COMMAND_NAME = 'saucerswap-v1_withdraw';
 

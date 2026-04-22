@@ -6,10 +6,8 @@ import {
 } from '@hiero-ledger/hiero-cli';
 import { z } from 'zod';
 
+import { LP_TOKEN_DISPLAY_DECIMALS } from '@/plugins/saucerswap-v1/constants';
 import { DeadlineSchema } from '@/shared/schemas/schemas';
-
-/** Typical LP token decimals for Uniswap V2–style pairs (display amounts without `t` suffix). */
-const LP_PAIR_DECIMALS = 8;
 
 export const SaucerSwapV1WithdrawInputSchema = z.object({
   tokenA: TokenReferenceObjectSchema.describe(
@@ -19,7 +17,7 @@ export const SaucerSwapV1WithdrawInputSchema = z.object({
     'Second token (Hedera ID, alias, EVM address, or "HBAR")',
   ),
   liquidity: AmountInputSchema.describe(
-    `LP amount to remove (display units or base units with "t" suffix; display uses ${LP_PAIR_DECIMALS} decimals).`,
+    `LP amount to remove (display units or base units with "t" suffix; display uses ${LP_TOKEN_DISPLAY_DECIMALS} decimals).`,
   ),
   minAmountA: AmountInputSchema.optional().describe(
     'Minimum token A returned (display units or base units with "t" suffix).',
