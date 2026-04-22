@@ -9,6 +9,15 @@ import {
 } from '@hiero-ledger/hiero-cli';
 import { z } from 'zod';
 
+/**
+ * Coerces a string|number to number and rejects non-numeric strings (e.g. "n/a")
+ * that would otherwise silently produce NaN after Number().
+ */
+const numericCoerce = z
+  .union([z.number(), z.string()])
+  .transform((v) => Number(v))
+  .refine((v) => !Number.isNaN(v), { message: 'Expected a numeric value' });
+
 /** SaucerSwap REST API key (CLI option `--api-key` maps to `apiKey`). */
 export const SaucerSwapApiKeySchema = z
   .string()
@@ -24,7 +33,7 @@ export const SaucerSwapV1ApiTokenSchema = z
     id: z.string(),
     symbol: z.string(),
     name: z.string(),
-    decimals: z.union([z.number(), z.string()]).transform((v) => Number(v)),
+    decimals: numericCoerce,
     priceUsd: z.union([z.number(), z.string()]).optional(),
   })
   .passthrough();
@@ -36,10 +45,7 @@ export const SaucerSwapV1ApiLpTokenSchema = z
     id: z.string(),
     symbol: z.string().optional(),
     name: z.string().optional(),
-    decimals: z
-      .union([z.number(), z.string()])
-      .transform((v) => Number(v))
-      .optional(),
+    decimals: numericCoerce.optional(),
     priceUsd: z.union([z.number(), z.string()]).optional(),
   })
   .passthrough();
@@ -76,7 +82,7 @@ export const SaucerSwapV2ApiTokenSchema = z
     id: z.string(),
     symbol: z.string(),
     name: z.string(),
-    decimals: z.union([z.number(), z.string()]).transform((v) => Number(v)),
+    decimals: numericCoerce,
     priceUsd: z.union([z.number(), z.string()]).optional(),
   })
   .passthrough();
@@ -88,13 +94,10 @@ export const SaucerSwapV2ApiPoolSchema = z
     contractId: z.string(),
     tokenA: SaucerSwapV2ApiTokenSchema,
     tokenB: SaucerSwapV2ApiTokenSchema,
-    fee: z.union([z.number(), z.string()]).transform((v) => Number(v)),
+    fee: numericCoerce,
     liquidity: z.string().optional(),
     sqrtRatioX96: z.string().optional(),
-    tickCurrent: z
-      .union([z.number(), z.string()])
-      .transform((v) => Number(v))
-      .optional(),
+    tickCurrent: numericCoerce.optional(),
   })
   .passthrough();
 
@@ -106,21 +109,12 @@ export const SaucerSwapV2ApiPoolArraySchema = z.array(
 
 export const SaucerSwapV2ApiPositionSchema = z
   .object({
-    tokenSN: z.union([z.number(), z.string()]).transform((v) => Number(v)),
+    tokenSN: numericCoerce,
     token0: SaucerSwapV2ApiTokenSchema.optional(),
     token1: SaucerSwapV2ApiTokenSchema.optional(),
-    fee: z
-      .union([z.number(), z.string()])
-      .transform((v) => Number(v))
-      .optional(),
-    tickLower: z
-      .union([z.number(), z.string()])
-      .transform((v) => Number(v))
-      .optional(),
-    tickUpper: z
-      .union([z.number(), z.string()])
-      .transform((v) => Number(v))
-      .optional(),
+    fee: numericCoerce.optional(),
+    tickLower: numericCoerce.optional(),
+    tickUpper: numericCoerce.optional(),
     liquidity: z.string().optional(),
     feeGrowthInside0LastX128: z.string().optional(),
     feeGrowthInside1LastX128: z.string().optional(),

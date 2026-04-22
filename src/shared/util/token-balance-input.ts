@@ -38,14 +38,13 @@ function parseDecimalNumber(balance: string, decimals: number): bigint {
     throw new ValidationError(`Invalid balance: "${balance}".`);
   }
   const [intPartRaw, fracPartRaw = ''] = balance.split('.');
-  const intPart = intPartRaw === '' ? '0' : intPartRaw;
   if (fracPartRaw.length > decimals) {
     throw new ValidationError(
       `Invalid balance: "${balance}". Too many decimal places.`,
     );
   }
   const fracPadded = fracPartRaw.padEnd(decimals, '0');
-  return BigInt(intPart + fracPadded);
+  return BigInt(intPartRaw + fracPadded);
 }
 
 function processBalanceInput(
