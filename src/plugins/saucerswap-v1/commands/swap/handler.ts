@@ -108,7 +108,7 @@ export class SaucerSwapV1SwapCommand extends BaseTransactionCommand<
       validArgs.amount,
       tokenFromDecimals,
     );
-    let amountOutMin = BigInt(0);
+    let amountOutMin: bigint;
     if (validArgs.minOutput) {
       let tokenOutDecimals = 0;
       if (!isRawUnits(validArgs.minOutput)) {
@@ -118,7 +118,7 @@ export class SaucerSwapV1SwapCommand extends BaseTransactionCommand<
         validArgs.minOutput,
         tokenOutDecimals,
       );
-    } else if (validArgs.slippage) {
+    } else {
       amountOutMin = await this.saucerSwapHelper.computeAmountOutMin(
         config.routerContractId,
         rawAmountIn,
