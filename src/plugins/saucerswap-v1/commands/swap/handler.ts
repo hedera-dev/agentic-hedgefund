@@ -102,21 +102,21 @@ export class SaucerSwapV1SwapCommand extends BaseTransactionCommand<
       tokenFromDecimals,
     );
     let amountOutMin = BigInt(0);
-    if (validArgs.slippage) {
-      amountOutMin = await this.saucerSwapHelper.computeAmountOutMin(
-        config.routerContractId,
-        rawAmountIn,
-        [fromEvm, toEvm],
-        validArgs.slippage,
-      );
-    } else if (validArgs.minOutput) {
+    if (validArgs.minOutput) {
       let tokenOutDecimals = 0;
       if (!isRawUnits(validArgs.minOutput)) {
         tokenOutDecimals = parseInt(toTokenInfo.decimals) || 0;
       }
       amountOutMin = processTokenBalanceInput(
-        validArgs.amount,
+        validArgs.minOutput,
         tokenOutDecimals,
+      );
+    } else if (validArgs.slippage) {
+      amountOutMin = await this.saucerSwapHelper.computeAmountOutMin(
+        config.routerContractId,
+        rawAmountIn,
+        [fromEvm, toEvm],
+        validArgs.slippage,
       );
     }
 
