@@ -1,11 +1,11 @@
-import type {
-  ContractQueryService,
-  ContractTransactionService,
+import {
+  type ContractQueryService,
+  type ContractTransactionService,
 } from '@hiero-ledger/hiero-cli';
-
 import { Interface } from 'ethers';
 
 import { ROUTER_ABI } from '@/plugins/saucerswap-v1/abi/router';
+import { assertAmountsArray } from '@/shared/util/contract-query-result';
 import { computeMaxInput, computeMinOutput } from '@/shared/util/slippage';
 
 export class SaucerSwapV1Helper {
@@ -27,7 +27,10 @@ export class SaucerSwapV1Helper {
       functionName: 'getAmountsOut',
       args: [amountIn, path],
     });
-    return result.queryResult[0] as bigint[];
+    return assertAmountsArray(result.queryResult[0], 'getAmountsOut', {
+      path,
+      amountIn: amountIn.toString(),
+    });
   }
 
   async computeAmountOutMin(
@@ -52,7 +55,10 @@ export class SaucerSwapV1Helper {
       functionName: 'getAmountsIn',
       args: [amountOut, path],
     });
-    return result.queryResult[0] as bigint[];
+    return assertAmountsArray(result.queryResult[0], 'getAmountsIn', {
+      path,
+      amountOut: amountOut.toString(),
+    });
   }
 
   async computeAmountInMax(

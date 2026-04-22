@@ -56,6 +56,13 @@ export class SaucerSwapV1SwapCommand extends BaseTransactionCommand<
     const network = api.network.getCurrentNetwork();
     const config = getSaucerSwapV1Config(network);
 
+    if (
+      isHbar(validArgs.from.value, config.whbarTokenId) &&
+      isHbar(validArgs.to.value, config.whbarTokenId)
+    ) {
+      throw new ValidationError('Both tokens cannot be HBAR');
+    }
+
     const direction = resolveSwapDirection(
       validArgs.from,
       validArgs.to,
