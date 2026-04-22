@@ -32,7 +32,7 @@ import {
 import { tokenEvmAddress } from '@/shared/util/token-evm';
 
 import { SaucerSwapV1SwapInputSchema } from './input';
-import { SwapDirection } from './types';
+import { SwapDirection } from '@/shared/types/shared.types';
 
 export const SAUCERSWAP_V1_SWAP_COMMAND_NAME = 'saucerswap-v1_swap';
 
@@ -55,6 +55,13 @@ export class SaucerSwapV1SwapCommand extends BaseTransactionCommand<
     const validArgs = SaucerSwapV1SwapInputSchema.parse(args.args);
     const network = api.network.getCurrentNetwork();
     const config = getSaucerSwapV1Config(network);
+
+    if (
+      isHbar(validArgs.from.value, config.whbarTokenId) &&
+      isHbar(validArgs.to.value, config.whbarTokenId)
+    ) {
+      throw new ValidationError('Both tokens cannot be HBAR');
+    }
 
     const direction = resolveSwapDirection(
       validArgs.from,
@@ -95,28 +102,28 @@ export class SaucerSwapV1SwapCommand extends BaseTransactionCommand<
 
     let tokenFromDecimals = 0;
     if (!isRawUnits(validArgs.amount)) {
-      tokenFromDecimals = parseInt(fromTokenInfo.decimals) || 0;
+      tokenFromDecimals = parseInt(fromTokenInfo.decimals, 10) || 0;
     }
     const rawAmountIn = processTokenBalanceInput(
       validArgs.amount,
       tokenFromDecimals,
     );
-    let amountOutMin = BigInt(0);
-    if (validArgs.slippage) {
+    let amountOutMin: bigint;
+    if (validArgs.minOutput) {
+      let tokenOutDecimals = 0;
+      if (!isRawUnits(validArgs.minOutput)) {
+        tokenOutDecimals = parseInt(toTokenInfo.decimals, 10) || 0;
+      }
+      amountOutMin = processTokenBalanceInput(
+        validArgs.minOutput,
+        tokenOutDecimals,
+      );
+    } else {
       amountOutMin = await this.saucerSwapHelper.computeAmountOutMin(
         config.routerContractId,
         rawAmountIn,
         [fromEvm, toEvm],
         validArgs.slippage,
-      );
-    } else if (validArgs.minOutput) {
-      let tokenOutDecimals = 0;
-      if (!isRawUnits(validArgs.minOutput)) {
-        tokenOutDecimals = parseInt(toTokenInfo.decimals) || 0;
-      }
-      amountOutMin = processTokenBalanceInput(
-        validArgs.amount,
-        tokenOutDecimals,
       );
     }
 
@@ -212,7 +219,7 @@ export class SaucerSwapV1SwapCommand extends BaseTransactionCommand<
       gas: params.gas,
       functionName: 'swapExactETHForTokens',
       functionParameters,
-      payableAmount: params.amountIn,
+      payableAmountTinybars: String(params.amountIn),
     });
     return { transaction: result.transaction };
   }

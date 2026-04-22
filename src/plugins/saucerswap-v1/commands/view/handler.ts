@@ -1,8 +1,9 @@
 import {
+  AliasType,
   Command,
   CommandHandlerArgs,
   CommandResult,
-  AliasType,
+  NotFoundError,
 } from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapApiService } from '@/shared/services/saucerswap-api/saucerswap-api-service.interface';
 import type { SaucerSwapV1ViewOutput } from './output';
@@ -62,16 +63,10 @@ export class SaucerSwapV1ViewCommand implements Command {
     );
 
     if (!pool) {
-      const outputData: SaucerSwapV1ViewOutput = {
-        network,
-        poolContractId: null,
-        tokenA: labelA,
-        tokenB: labelB,
-        reserveA: null,
-        reserveB: null,
-        lpTokenId: null,
-      };
-      return { result: outputData };
+      throw new NotFoundError(
+        `No SaucerSwap V1 pool found for ${labelA} / ${labelB} on ${network}`,
+        { context: { tokenA: idA, tokenB: idB, network } },
+      );
     }
 
     const userA = normalizeV1TokenId(idA);

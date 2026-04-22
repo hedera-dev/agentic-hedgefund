@@ -3,11 +3,11 @@ import { z } from 'zod';
 
 export const SaucerSwapV1ViewOutputSchema = z.object({
   network: NetworkSchema,
-  poolContractId: z.string().nullable(),
+  poolContractId: z.string(),
   tokenA: z.string(),
   tokenB: z.string(),
-  reserveA: z.string().nullable(),
-  reserveB: z.string().nullable(),
+  reserveA: z.string(),
+  reserveB: z.string(),
   lpTokenId: z.string().nullable().optional(),
 });
 

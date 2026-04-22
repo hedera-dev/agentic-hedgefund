@@ -1,4 +1,4 @@
-import { SwapDirection } from '@/plugins/saucerswap-v1/commands/swap';
+import { SwapDirection } from '@/shared/types/shared.types';
 import { isHbar } from '@/shared/util/hbar-detection';
 
 function tokenRefString(ref: string | { value: string }): string {

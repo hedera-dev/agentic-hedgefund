@@ -4,4 +4,3 @@ export {
   SAUCERSWAP_V1_SWAP_TEMPLATE,
   SaucerSwapV1SwapOutputSchema,
 } from './output';
-export { SwapDirection } from './types';

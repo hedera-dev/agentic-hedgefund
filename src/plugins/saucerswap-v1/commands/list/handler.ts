@@ -59,8 +59,7 @@ function matchesTokenFilter(
     pool.tokenA.symbol.toUpperCase(),
     pool.tokenB.symbol.toUpperCase(),
   ];
-  if (candidates.includes(normalized) || candidates.includes(filter))
-    return true;
+  if (candidates.includes(normalized)) return true;
   return (
     pool.tokenA.name.toUpperCase().includes(normalized) ||
     pool.tokenB.name.toUpperCase().includes(normalized)

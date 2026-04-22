@@ -1,0 +1,5 @@
+export enum SwapDirection {
+  HBAR_FOR_TOKEN = 'HBAR_FOR_TOKEN',
+  TOKEN_FOR_HBAR = 'TOKEN_FOR_HBAR',
+  TOKEN_FOR_TOKEN = 'TOKEN_FOR_TOKEN',
+}

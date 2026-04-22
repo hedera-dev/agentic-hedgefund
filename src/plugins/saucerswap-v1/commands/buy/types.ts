@@ -3,7 +3,7 @@ import type {
   SupportedNetwork,
   TransactionResult,
 } from '@hiero-ledger/hiero-cli';
-import type { SwapDirection } from '@/plugins/saucerswap-v1/commands/swap/types';
+import type { SwapDirection } from '@/shared/types/shared.types';
 import type { SaucerSwapNetworkConfig } from '@/plugins/saucerswap-v1/constants';
 
 export interface SaucerSwapV1BuyNormalizedParams {

@@ -24,6 +24,9 @@ export const SAUCERSWAP_V1_CONFIG: Partial<
   },
 };
 
+/** SaucerSwap V1 LP tokens are HTS tokens with 8 decimal places. */
+export const LP_TOKEN_DISPLAY_DECIMALS = 8;
+
 export function getSaucerSwapV1Config(
   network: SupportedNetwork,
 ): SaucerSwapNetworkConfig {
