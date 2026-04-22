@@ -32,7 +32,7 @@ import {
 import { tokenEvmAddress } from '@/shared/util/token-evm';
 
 import { SaucerSwapV1SwapInputSchema } from './input';
-import { SwapDirection } from './types';
+import { SwapDirection } from '@/shared/types/shared.types';
 
 export const SAUCERSWAP_V1_SWAP_COMMAND_NAME = 'saucerswap-v1_swap';
 
