@@ -1,7 +1,4 @@
-import type {
-  CommandHandlerArgs,
-  CommandResult,
-} from '@hiero-ledger/hiero-cli';
+import { CommandHandlerArgs, CommandResult } from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapV2DecreaseLiquidityOutput } from './output';
 import type {
   SaucerSwapV2DecreaseLiquidityBuildResult,
@@ -24,9 +21,10 @@ import {
 import { encodeContractCall } from '@/plugins/saucerswap-v2/utils/abi-encoder';
 import { encodeMulticall } from '@/plugins/saucerswap-v2/utils/multicall';
 import { computeDeadline } from '@/shared/util/deadline';
-import { accountIdToEvmAddress } from '@/shared/util/token-resolver';
 
 import { SaucerSwapV2DecreaseLiquidityInputSchema } from './input';
+import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 export const SAUCERSWAP_V2_DECREASE_LIQUIDITY_COMMAND_NAME =
   'saucerswap-v2_decrease-liquidity';
@@ -37,8 +35,11 @@ export class SaucerSwapV2DecreaseLiquidityCommand extends BaseTransactionCommand
   SaucerSwapV2DecreaseLiquiditySignResult,
   SaucerSwapV2DecreaseLiquidityExecuteResult
 > {
-  constructor() {
+  private readonly saucerSwapHelper: SaucerSwapHelperService;
+
+  constructor(saucerSwapHelper: SaucerSwapHelperService) {
     super(SAUCERSWAP_V2_DECREASE_LIQUIDITY_COMMAND_NAME);
+    this.saucerSwapHelper = saucerSwapHelper;
   }
 
   async normalizeParams(
@@ -49,8 +50,8 @@ export class SaucerSwapV2DecreaseLiquidityCommand extends BaseTransactionCommand
     const network = api.network.getCurrentNetwork();
     const config = getSaucerSwapV2Config(network);
 
-    const operator = api.network.getCurrentOperatorOrThrow();
-    const recipient = accountIdToEvmAddress(operator.accountId);
+    const recipientAccount = await this.saucerSwapHelper.resolveRecipient();
+    const recipient = recipientAccount.evmAddress!;
 
     const liquidity =
       validArgs.liquidity === 'all' ? MAX_UINT128 : BigInt(validArgs.liquidity);
@@ -181,5 +182,11 @@ export class SaucerSwapV2DecreaseLiquidityCommand extends BaseTransactionCommand
 export async function saucerswapV2DecreaseLiquidity(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  return new SaucerSwapV2DecreaseLiquidityCommand().execute(args);
+  return new SaucerSwapV2DecreaseLiquidityCommand(
+    new SaucerSwapHelperServiceImpl(
+      args.api.mirror,
+      args.api.network,
+      args.api.identityResolution,
+    ),
+  ).execute(args);
 }

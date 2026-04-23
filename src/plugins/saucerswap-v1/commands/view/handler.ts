@@ -1,5 +1,4 @@
 import {
-  AliasType,
   Command,
   CommandHandlerArgs,
   CommandResult,
@@ -10,7 +9,8 @@ import type { SaucerSwapV1ViewOutput } from './output';
 
 import { getSaucerSwapV1Config } from '@/plugins/saucerswap-v1/constants';
 import { SaucerSwapApiServiceImpl } from '@/shared/services/saucerswap-api/saucerswap-api-service';
-import { isHbar } from '@/shared/util/hbar-detection';
+import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 import { SaucerSwapV1ViewInputSchema } from './input';
 
@@ -19,7 +19,10 @@ function normalizeV1TokenId(id: string): string {
 }
 
 export class SaucerSwapV1ViewCommand implements Command {
-  constructor(private readonly saucerSwapApi: SaucerSwapApiService) {}
+  constructor(
+    private readonly saucerSwapApi: SaucerSwapApiService,
+    private readonly saucerSwapHelper: SaucerSwapHelperService,
+  ) {}
 
   async execute(args: CommandHandlerArgs): Promise<CommandResult> {
     const { api } = args;
@@ -27,27 +30,22 @@ export class SaucerSwapV1ViewCommand implements Command {
     const network = api.network.getCurrentNetwork();
     const config = getSaucerSwapV1Config(network);
 
-    const fromTokenIdA = isHbar(validArgs.tokenA.value, config.whbarTokenId)
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.tokenA.value,
-          referenceType: validArgs.tokenA.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-    const fromTokenIdB = isHbar(validArgs.tokenB.value, config.whbarTokenId)
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.tokenB.value,
-          referenceType: validArgs.tokenB.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-
-    const [tokenInfoA, tokenInfoB] = await Promise.all([
-      api.mirror.getTokenInfo(fromTokenIdA),
-      api.mirror.getTokenInfo(fromTokenIdB),
+    const [tokenA, tokenB] = await Promise.all([
+      this.saucerSwapHelper.resolveToken({
+        value: validArgs.tokenA.value,
+        type: validArgs.tokenA.type,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
+      this.saucerSwapHelper.resolveToken({
+        value: validArgs.tokenB.value,
+        type: validArgs.tokenB.type,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
     ]);
+    const tokenInfoA = tokenA.tokenInfo;
+    const tokenInfoB = tokenB.tokenInfo;
 
     const idA = String(tokenInfoA.token_id);
     const idB = String(tokenInfoB.token_id);
@@ -96,7 +94,12 @@ export class SaucerSwapV1ViewCommand implements Command {
 export async function saucerswapV1View(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  return new SaucerSwapV1ViewCommand(new SaucerSwapApiServiceImpl()).execute(
-    args,
-  );
+  return new SaucerSwapV1ViewCommand(
+    new SaucerSwapApiServiceImpl(),
+    new SaucerSwapHelperServiceImpl(
+      args.api.mirror,
+      args.api.network,
+      args.api.identityResolution,
+    ),
+  ).execute(args);
 }

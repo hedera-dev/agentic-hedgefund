@@ -1,7 +1,4 @@
-import type {
-  CommandHandlerArgs,
-  CommandResult,
-} from '@hiero-ledger/hiero-cli';
+import { CommandHandlerArgs, CommandResult } from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapV2SwapOutput } from './output';
 import type {
   SaucerSwapV2SwapBuildResult,
@@ -11,13 +8,6 @@ import type {
 } from './types';
 
 import {
-  ContractExecuteTransaction,
-  ContractId,
-  Hbar,
-  HbarUnit,
-} from '@hashgraph/sdk';
-import {
-  AliasType,
   BaseTransactionCommand,
   TransactionError,
 } from '@hiero-ledger/hiero-cli';
@@ -27,20 +17,17 @@ import { getSaucerSwapV2Config } from '@/plugins/saucerswap-v2/constants';
 import { encodeContractCall } from '@/plugins/saucerswap-v2/utils/abi-encoder';
 import { encodeMulticall } from '@/plugins/saucerswap-v2/utils/multicall';
 import { encodePath } from '@/plugins/saucerswap-v2/utils/path-encoder';
-import { toBigNumber } from '@/shared/util/bignum';
 import { computeDeadline } from '@/shared/util/deadline';
-import { isHbar } from '@/shared/util/hbar-detection';
 import { computeMinOutput } from '@/shared/util/slippage';
 import {
   isRawUnits,
   processTokenBalanceInput,
 } from '@/shared/util/token-balance-input';
-import {
-  accountIdToEvmAddress,
-  tokenEvmAddress,
-} from '@/shared/util/token-resolver';
 
 import { SaucerSwapV2SwapInputSchema } from './input';
+import { tokenEvmAddress } from '@/shared/util/token-evm';
+import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 export const SAUCERSWAP_V2_SWAP_COMMAND_NAME = 'saucerswap-v2_swap';
 
@@ -50,8 +37,10 @@ export class SaucerSwapV2SwapCommand extends BaseTransactionCommand<
   SaucerSwapV2SwapSignResult,
   SaucerSwapV2SwapExecuteResult
 > {
-  constructor() {
+  private readonly saucerSwapHelper: SaucerSwapHelperService;
+  constructor(saucerSwapHelper: SaucerSwapHelperService) {
     super(SAUCERSWAP_V2_SWAP_COMMAND_NAME);
+    this.saucerSwapHelper = saucerSwapHelper;
   }
 
   async normalizeParams(
@@ -62,38 +51,32 @@ export class SaucerSwapV2SwapCommand extends BaseTransactionCommand<
     const network = api.network.getCurrentNetwork();
     const config = getSaucerSwapV2Config(network);
 
-    const fromIsHbar = isHbar(validArgs.from.value, config.whbarTokenId);
-    const toIsHbar = isHbar(validArgs.to.value, config.whbarTokenId);
-
-    const fromTokenId = fromIsHbar
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.from.value,
-          referenceType: validArgs.from.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-    const toTokenId = toIsHbar
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.to.value,
-          referenceType: validArgs.to.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-
-    const [fromInfo, toInfo] = await Promise.all([
-      api.mirror.getTokenInfo(fromTokenId),
-      api.mirror.getTokenInfo(toTokenId),
+    const [fromToken, toToken] = await Promise.all([
+      this.saucerSwapHelper.resolveToken({
+        value: validArgs.from.value,
+        type: validArgs.from.type,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
+      this.saucerSwapHelper.resolveToken({
+        value: validArgs.to.value,
+        type: validArgs.to.type,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
     ]);
+    const fromIsHbar = fromToken.isHbar;
+    const toIsHbar = toToken.isHbar;
+    const fromInfo = fromToken.tokenInfo;
+    const toInfo = toToken.tokenInfo;
 
     const fromEvm = tokenEvmAddress(fromInfo.token_id);
     const toEvm = tokenEvmAddress(toInfo.token_id);
 
     const path = encodePath([fromEvm, toEvm], [validArgs.feeTier]);
 
-    const operator = api.network.getCurrentOperatorOrThrow();
-    const recipient = accountIdToEvmAddress(operator.accountId);
+    const recipientAccount = await this.saucerSwapHelper.resolveRecipient();
+    const recipient = recipientAccount.evmAddress!;
 
     let fromDecimals = 0;
     if (!isRawUnits(validArgs.amount)) {
@@ -128,9 +111,10 @@ export class SaucerSwapV2SwapCommand extends BaseTransactionCommand<
   }
 
   async buildTransaction(
-    _args: CommandHandlerArgs,
+    args: CommandHandlerArgs,
     params: SaucerSwapV2SwapNormalizedParams,
   ): Promise<SaucerSwapV2SwapBuildResult> {
+    const { api } = args;
     const deadline = computeDeadline(params.deadlineSeconds);
 
     const swapParams = {
@@ -160,18 +144,14 @@ export class SaucerSwapV2SwapCommand extends BaseTransactionCommand<
       functionParameters = swapEncoded;
     }
 
-    const tx = new ContractExecuteTransaction()
-      .setContractId(ContractId.fromString(params.config.swapRouterContractId))
-      .setGas(params.gas)
-      .setFunctionParameters(functionParameters);
+    const result = api.contract.contractExecuteWithEncodedParams({
+      contractId: params.config.swapRouterContractId,
+      gas: params.gas,
+      payableAmountTinybars: String(params.amountIn),
+      functionParametersEncoded: functionParameters,
+    });
 
-    if (params.fromIsHbar) {
-      tx.setPayableAmount(
-        Hbar.from(toBigNumber(params.amountIn), HbarUnit.Tinybar),
-      );
-    }
-
-    return { transaction: tx };
+    return { transaction: result.transaction };
   }
 
   async signTransaction(
@@ -224,5 +204,11 @@ export class SaucerSwapV2SwapCommand extends BaseTransactionCommand<
 export async function saucerswapV2Swap(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  return new SaucerSwapV2SwapCommand().execute(args);
+  return new SaucerSwapV2SwapCommand(
+    new SaucerSwapHelperServiceImpl(
+      args.api.mirror,
+      args.api.network,
+      args.api.identityResolution,
+    ),
+  ).execute(args);
 }

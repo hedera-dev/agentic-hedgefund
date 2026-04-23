@@ -17,7 +17,6 @@ import {
   HbarUnit,
 } from '@hashgraph/sdk';
 import {
-  AliasType,
   BaseTransactionCommand,
   NotFoundError,
   TransactionError,
@@ -39,16 +38,15 @@ import { toBigNumber } from '@/shared/util/bignum';
 import { computeDeadline } from '@/shared/util/deadline';
 import { isHbar } from '@/shared/util/hbar-detection';
 import { computeMinOutput } from '@/shared/util/slippage';
+import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 import {
   isRawUnits,
   processTokenBalanceInput,
 } from '@/shared/util/token-balance-input';
-import {
-  accountIdToEvmAddress,
-  tokenEvmAddress,
-} from '@/shared/util/token-resolver';
 
 import { SaucerSwapV2MintPositionInputSchema } from './input';
+import { tokenEvmAddress } from '@/shared/util/token-evm';
 
 export const SAUCERSWAP_V2_MINT_POSITION_COMMAND_NAME =
   'saucerswap-v2_mint-position';
@@ -59,8 +57,10 @@ export class SaucerSwapV2MintPositionCommand extends BaseTransactionCommand<
   SaucerSwapV2MintPositionSignResult,
   SaucerSwapV2MintPositionExecuteResult
 > {
-  constructor() {
+  private readonly saucerSwapHelper: SaucerSwapHelperService;
+  constructor(saucerSwapHelper: SaucerSwapHelperService) {
     super(SAUCERSWAP_V2_MINT_POSITION_COMMAND_NAME);
+    this.saucerSwapHelper = saucerSwapHelper;
   }
 
   async normalizeParams(
@@ -78,27 +78,23 @@ export class SaucerSwapV2MintPositionCommand extends BaseTransactionCommand<
     }
 
     const whbar = tokenEvmAddress(config.whbarTokenId);
-    const tokenAId = aIsHbar
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.tokenA.value,
-          referenceType: validArgs.tokenA.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-    const tokenBId = bIsHbar
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.tokenB.value,
-          referenceType: validArgs.tokenB.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
 
-    const [infoA, infoB] = await Promise.all([
-      api.mirror.getTokenInfo(tokenAId),
-      api.mirror.getTokenInfo(tokenBId),
+    const [tokenAResolved, tokenBResolved] = await Promise.all([
+      this.saucerSwapHelper.resolveToken({
+        value: validArgs.tokenA.value,
+        type: validArgs.tokenA.type,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
+      this.saucerSwapHelper.resolveToken({
+        value: validArgs.tokenB.value,
+        type: validArgs.tokenB.type,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
     ]);
+    const infoA = tokenAResolved.tokenInfo;
+    const infoB = tokenBResolved.tokenInfo;
 
     const tokenAEvm = aIsHbar ? whbar : tokenEvmAddress(infoA.token_id);
     const tokenBEvm = bIsHbar ? whbar : tokenEvmAddress(infoB.token_id);
@@ -167,8 +163,8 @@ export class SaucerSwapV2MintPositionCommand extends BaseTransactionCommand<
       tickUpper = range.tickUpper;
     }
 
-    const operator = api.network.getCurrentOperatorOrThrow();
-    const recipient = accountIdToEvmAddress(operator.accountId);
+    const recipientAccount = await this.saucerSwapHelper.resolveRecipient();
+    const recipient = recipientAccount.evmAddress!;
 
     const hbarSide: '0' | '1' | null = (() => {
       if (!aIsHbar && !bIsHbar) return null;
@@ -300,5 +296,11 @@ export class SaucerSwapV2MintPositionCommand extends BaseTransactionCommand<
 export async function saucerswapV2MintPosition(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  return new SaucerSwapV2MintPositionCommand().execute(args);
+  return new SaucerSwapV2MintPositionCommand(
+    new SaucerSwapHelperServiceImpl(
+      args.api.mirror,
+      args.api.network,
+      args.api.identityResolution,
+    ),
+  ).execute(args);
 }

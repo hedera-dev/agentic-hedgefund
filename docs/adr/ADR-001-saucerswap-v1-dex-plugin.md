@@ -34,7 +34,7 @@ src/plugins/saucerswap-v1/
 ├── index.ts
 ├── manifest.ts
 ├── constants.ts
-├── saucerswap-helper.ts
+├── saucerswap-contract-resolver.ts
 ├── abi/
 │   └── router.ts
 ├── utils/
@@ -152,7 +152,7 @@ Slippage and deadline helpers are **shared across both SaucerSwap plugins** and 
 - `src/shared/util/hbar-detection.ts` — `isHbar(token, whbarTokenId?)`.
 - `src/shared/util/contract-query-result.ts` — helpers such as `assertAmountsArray` for parsing router return values.
 
-In addition, the V1 plugin ships a `saucerswap-helper.ts` at the plugin root that provides a thin `SaucerSwapV1Helper` class (constructed with the CLI's `ContractQueryService` and `ContractTransactionService`). It wraps the router ABI and exposes:
+In addition, the V1 plugin ships a `saucerswap-contract-resolver.ts` at the plugin root that provides a thin `SaucerSwapV1Helper` class (constructed with the CLI's `ContractQueryService` and `ContractTransactionService`). It wraps the router ABI and exposes:
 
 - `getAmountsOut(routerId, amountIn, path)` / `computeAmountOutMin(routerId, amountIn, path, slippagePercent)`
 - `getAmountsIn(routerId, amountOut, path)` / `computeAmountInMax(routerId, amountOut, path, slippagePercent)`
@@ -533,7 +533,7 @@ flowchart LR
 - A plugin directory `src/plugins/saucerswap-v1/` with the structure described above.
 - The plugin manifest (`saucerswapV1PluginManifest`) registers all six commands, their options, output schemas and Handlebars templates.
 - A shared **`SaucerSwapApiService`** / **`SaucerSwapApiServiceImpl`** lives at `src/shared/services/saucerswap-api/`, with all SaucerSwap Zod schemas in `src/shared/schemas/schemas.ts`. Both V1 and V2 plugins consume this service.
-- Shared utilities (`hbar-detection.ts`, `slippage.ts`, `deadline.ts`, `contract-query-result.ts`) live in `src/shared/util/` and are reused across plugins. The V1 plugin ships a local `saucerswap-helper.ts` (`SaucerSwapV1Helper`) for router quote helpers (`getAmountsOut`, `getAmountsIn`, and slippage-aware variants).
+- Shared utilities (`hbar-detection.ts`, `slippage.ts`, `deadline.ts`, `contract-query-result.ts`) live in `src/shared/util/` and are reused across plugins. The V1 plugin ships a local `saucerswap-contract-resolver.ts` (`SaucerSwapV1Helper`) for router quote helpers (`getAmountsOut`, `getAmountsIn`, and slippage-aware variants).
 - Users must ensure token associations and spender allowances are in place before using the plugin.
 - The `constants.ts` file must be updated if testnet contract IDs change.
 - Multi-hop swap routing and custom-fee token variants (`*SupportingFeeOnTransferTokens`) can be added as future enhancements without changing the command structure.

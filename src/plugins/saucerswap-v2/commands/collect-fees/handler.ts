@@ -1,7 +1,4 @@
-import type {
-  CommandHandlerArgs,
-  CommandResult,
-} from '@hiero-ledger/hiero-cli';
+import { CommandHandlerArgs, CommandResult } from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapV2CollectFeesOutput } from './output';
 import type {
   SaucerSwapV2CollectFeesBuildResult,
@@ -23,9 +20,10 @@ import {
 } from '@/plugins/saucerswap-v2/constants';
 import { encodeContractCall } from '@/plugins/saucerswap-v2/utils/abi-encoder';
 import { encodeMulticall } from '@/plugins/saucerswap-v2/utils/multicall';
-import { accountIdToEvmAddress } from '@/shared/util/token-resolver';
 
 import { SaucerSwapV2CollectFeesInputSchema } from './input';
+import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 export const SAUCERSWAP_V2_COLLECT_FEES_COMMAND_NAME =
   'saucerswap-v2_collect-fees';
@@ -36,8 +34,11 @@ export class SaucerSwapV2CollectFeesCommand extends BaseTransactionCommand<
   SaucerSwapV2CollectFeesSignResult,
   SaucerSwapV2CollectFeesExecuteResult
 > {
-  constructor() {
+  private readonly saucerSwapHelper: SaucerSwapHelperService;
+
+  constructor(saucerSwapHelper: SaucerSwapHelperService) {
     super(SAUCERSWAP_V2_COLLECT_FEES_COMMAND_NAME);
+    this.saucerSwapHelper = saucerSwapHelper;
   }
 
   async normalizeParams(
@@ -48,8 +49,8 @@ export class SaucerSwapV2CollectFeesCommand extends BaseTransactionCommand<
     const network = api.network.getCurrentNetwork();
     const config = getSaucerSwapV2Config(network);
 
-    const operator = api.network.getCurrentOperatorOrThrow();
-    const recipient = accountIdToEvmAddress(operator.accountId);
+    const recipientAccount = await this.saucerSwapHelper.resolveRecipient();
+    const recipient = recipientAccount.evmAddress!;
 
     return {
       config,
@@ -150,5 +151,11 @@ export class SaucerSwapV2CollectFeesCommand extends BaseTransactionCommand<
 export async function saucerswapV2CollectFees(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  return new SaucerSwapV2CollectFeesCommand().execute(args);
+  return new SaucerSwapV2CollectFeesCommand(
+    new SaucerSwapHelperServiceImpl(
+      args.api.mirror,
+      args.api.network,
+      args.api.identityResolution,
+    ),
+  ).execute(args);
 }

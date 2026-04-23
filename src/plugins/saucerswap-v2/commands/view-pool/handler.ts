@@ -6,47 +6,44 @@ import type {
 import type { SaucerSwapApiService } from '@/shared/services/saucerswap-api/saucerswap-api-service.interface';
 import type { SaucerSwapV2ViewPoolOutput } from './output';
 
-import { AliasType } from '@hiero-ledger/hiero-cli';
 import { Interface } from 'ethers';
 
 import { FACTORY_ABI } from '@/plugins/saucerswap-v2/abi/factory';
 import { getSaucerSwapV2Config } from '@/plugins/saucerswap-v2/constants';
 import { SaucerSwapApiServiceImpl } from '@/shared/services/saucerswap-api/saucerswap-api-service';
-import { isHbar } from '@/shared/util/hbar-detection';
-import { tokenEvmAddress } from '@/shared/util/token-resolver';
+import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 import { SaucerSwapV2ViewPoolInputSchema } from './input';
+import { tokenEvmAddress } from '@/shared/util/token-evm';
 
 export class SaucerSwapV2ViewPoolCommand implements Command {
-  constructor(private readonly saucerSwapApi: SaucerSwapApiService) {}
+  constructor(
+    private readonly saucerSwapApi: SaucerSwapApiService,
+    private readonly saucerSwapHelper: SaucerSwapHelperService,
+  ) {}
   async execute(args: CommandHandlerArgs): Promise<CommandResult> {
     const { api } = args;
     const validArgs = SaucerSwapV2ViewPoolInputSchema.parse(args.args);
     const network = api.network.getCurrentNetwork();
     const config = getSaucerSwapV2Config(network);
 
-    const tokenAId = isHbar(validArgs.tokenA.value, config.whbarTokenId)
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.tokenA.value,
-          referenceType: validArgs.tokenA.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-    const tokenBId = isHbar(validArgs.tokenB.value, config.whbarTokenId)
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.tokenB.value,
-          referenceType: validArgs.tokenB.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-    const [fromInfo, toInfo] = await Promise.all([
-      api.mirror.getTokenInfo(tokenAId),
-      api.mirror.getTokenInfo(tokenBId),
+    const [tokenAResolved, tokenBResolved] = await Promise.all([
+      this.saucerSwapHelper.resolveToken({
+        value: validArgs.tokenA.value,
+        type: validArgs.tokenA.type,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
+      this.saucerSwapHelper.resolveToken({
+        value: validArgs.tokenB.value,
+        type: validArgs.tokenB.type,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
     ]);
-    const tokenAEvm = tokenEvmAddress(fromInfo.token_id);
-    const tokenBEvm = tokenEvmAddress(toInfo.token_id);
+    const tokenAEvm = tokenEvmAddress(tokenAResolved.tokenInfo.token_id);
+    const tokenBEvm = tokenEvmAddress(tokenBResolved.tokenInfo.token_id);
 
     let poolAddress: string | null = null;
     try {
@@ -116,5 +113,10 @@ export async function saucerswapV2ViewPool(
 ): Promise<CommandResult> {
   return new SaucerSwapV2ViewPoolCommand(
     new SaucerSwapApiServiceImpl(),
+    new SaucerSwapHelperServiceImpl(
+      args.api.mirror,
+      args.api.network,
+      args.api.identityResolution,
+    ),
   ).execute(args);
 }
