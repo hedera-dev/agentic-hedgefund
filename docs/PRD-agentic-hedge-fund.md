@@ -1,9 +1,10 @@
 # PRD: Agentic Hedge Fund — Hiero CLI Reference Demo Application
 
 - **Status:** Draft
-- **Date:** 2026-04-02
+- **Date:** 2026-04-21
 - **Owner:** Hiero CLI Team
-- **Related ADRs:** ADR-001 (Plugin Architecture), ADR-010 (Batch Transactions), ADR-011 (Schedule Transactions), ADR-013 (SaucerSwap DEX Plugin — proposed)
+- **Related ADRs:** [ADR-001 — SaucerSwap V1 DEX Plugin](adr/ADR-001-saucerswap-v1-dex-plugin.md), [ADR-002 — SaucerSwap V2 DEX Plugin](adr/ADR-002-saucerswap-v2-dex-plugin.md)
+- **Host CLI:** `@hiero-ledger/hiero-cli` — the upstream Hiero CLI package this demo depends on (often installed from a tarball or a local fork checkout via `file:` in `package.json`)
 
 ---
 
@@ -11,9 +12,16 @@
 
 ### What Are We Demonstrating?
 
-The Hiero CLI is a modular, plugin-based command-line interface for interacting with the Hedera network. It already supports account management, token operations, HBAR transfers, contract interaction, batch transactions, and scheduled transactions — all through a composable plugin architecture with structured JSON output.
+The **Hiero CLI** (imported in this repo as `@hiero-ledger/hiero-cli`) is a modular, plugin-based command-line interface for Hedera. Core plugins shipped with the host CLI include **account**, **hbar**, **token**, **contract**, **batch**, **schedule**, **network**, **config**, **credentials**, **topic**, **plugin-management**, **contract-erc20**, **contract-erc721**, and others — each exposing typed commands with structured (Zod-backed) output.
 
-With the addition of the **SaucerSwap DEX plugin** (ADR-013), the CLI gains the final building block needed to support DeFi operations: token swaps, liquidity management, and pool discovery.
+This **demo application** adds **two** first-party DEX plugins documented in **ADR-001** and **ADR-002**:
+
+| Plugin              | Protocol                                                           | Role in DeFi demos                                                                                           |
+| ------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| **`saucerswap-v1`** | Uniswap V2–style AMM (constant product, fungible LP)               | Classic swaps, add/remove liquidity, pool discovery via REST                                                 |
+| **`saucerswap-v2`** | Uniswap V3–style concentrated liquidity (NFT positions, fee tiers) | Swaps with `--fee-tier`, NFT-based LP (`mint-position`, `increase-liquidity`, etc.), V2 REST pools/positions |
+
+Both plugins share **`SaucerSwapApiService`** and Zod API schemas under `src/shared/` (see ADRs). Read-only pool listing requires a user-supplied **`--api-key`** (SaucerSwap `x-api-key`).
 
 The **Agentic Hedge Fund** is a reference demo application that answers the question:
 
@@ -22,7 +30,7 @@ The **Agentic Hedge Fund** is a reference demo application that answers the ques
 This demo demonstrates that:
 
 1. **AI agents can be first-class actors** that interact with blockchain infrastructure through typed CLI commands
-2. **The Hiero CLI plugin model is genuinely extensible** — adding a DEX plugin unlocks an entirely new class of applications
+2. **The Hiero CLI plugin model is genuinely extensible** — dedicated DEX plugins (`saucerswap-v1`, `saucerswap-v2`) compose with core plugins without forking the host CLI
 3. **Composability across plugins creates emergent capabilities** — batch atomicity, scheduled multi-sig governance, and DEX trading combine into a system that exceeds the sum of its parts
 4. **On-chain actions are verifiable and auditable** — every agent action maps to a CLI invocation with structured input and output
 
@@ -30,16 +38,19 @@ This demo demonstrates that:
 
 A hedge fund operating on-chain is a high-value, high-complexity scenario that exercises every layer of the CLI:
 
-| Fund Operation         | CLI Capability                                                               |
-| ---------------------- | ---------------------------------------------------------------------------- |
-| Portfolio observation  | Mirror Node queries, `saucerswap list/view`, `token view`, `account balance` |
-| Trade execution        | `saucerswap swap`, `saucerswap buy`, `hbar transfer`, `token transfer-ft`    |
-| Liquidity provisioning | `saucerswap deposit`, `saucerswap withdraw`                                  |
-| Atomic rebalancing     | `batch create` + multiple ops + `batch execute`                              |
-| Multi-sig governance   | `schedule create` + `schedule sign` + `--scheduled` hook                     |
-| Wallet management      | `account create`, `account balance`                                          |
+| Fund Operation           | CLI capability (examples)                                                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Portfolio observation    | `saucerswap-v1 list` / `view` (with `--api-key`), `saucerswap-v2 list-pools` / `view-pool`, `token view`, `account balance` |
+| Trade execution (V1)     | `saucerswap-v1 swap`, `saucerswap-v1 buy`                                                                                   |
+| Trade execution (V2)     | `saucerswap-v2 swap`, `saucerswap-v2 buy` (requires `--fee-tier`; single-hop path)                                          |
+| V1 liquidity             | `saucerswap-v1 deposit`, `saucerswap-v1 withdraw`                                                                           |
+| V2 liquidity             | `saucerswap-v2 mint-position`, `increase-liquidity`, `decrease-liquidity`, `collect-fees`, `list-positions`                 |
+| Token allowance / ERC-20 | `contract` / `contract-erc20` (e.g. `approve` patterns as supported by the host CLI)                                        |
+| Atomic rebalancing       | `batch create` + commands with `--batch` + `batch execute`                                                                  |
+| Multi-sig governance     | `schedule create` + `schedule sign` / `verify` / `delete` + `--scheduled` on supported commands                             |
+| Wallet management        | `account create`, `account balance`, `account import`, `hbar transfer`, `token transfer-ft`                                 |
 
-No single plugin demo could showcase this breadth. A hedge fund scenario naturally touches all of them.
+No single plugin demo could showcase this breadth. A hedge fund scenario naturally touches core host plugins and both SaucerSwap plugins.
 
 ---
 
@@ -110,13 +121,17 @@ No single plugin demo could showcase this breadth. A hedge fund scenario natural
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     CLI EXECUTION LAYER                             │
 │                                                                     │
-│  ┌──────────┬──────────┬──────────┬──────────┬─────────┬─────────┐  │
-│  │saucerswap│  token   │   hbar   │ schedule │  batch  │ account │  │
-│  │  plugin  │  plugin  │  plugin  │  plugin  │  plugin │  plugin │  │
-│  └──────────┴──────────┴──────────┴──────────┴─────────┴─────────┘  │
+│  ┌────────────┬────────────┬──────────┬──────────┬─────────┬─────┐  │
+│  │saucerswap- │saucerswap- │  token   │   hbar   │ schedule│batch│  │
+│  │    v1      │    v2      │  plugin  │  plugin  │ plugin  │     │  │
+│  └────────────┴────────────┴──────────┴──────────┴─────────┴─────┘  │
+│  ┌──────────┬──────────┬──────────────────────────────────────────┐  │
+│  │ account  │ contract │  (+ network, config, credentials, …)   │  │
+│  └──────────┴──────────┴──────────────────────────────────────────┘  │
 │  ┌────────────────────────────────────────────────────────────────┐ │
 │  │                      Core API Services                         │ │
 │  │  KeyResolver │ KMS │ MirrorNode │ TxSign │ TxExecute │ State   │ │
+│  │  ContractQuery │ IdentityResolution │ (+ batch/schedule hooks) │ │
 │  └────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────┬───────────────────────────────────────┘
                               │
@@ -126,12 +141,12 @@ No single plugin demo could showcase this breadth. A hedge fund scenario natural
 │                                                                     │
 │    Hedera Network (testnet / mainnet)                               │
 │    ┌────────────┐  ┌────────────────┐  ┌──────────────────────┐     │
-│    │ Consensus  │  │  Mirror Node   │  │ SaucerSwap Contracts │     │
-│    │  Nodes     │  │  REST API      │  │ (Router / Factory)   │     │
+│    │ Consensus  │  │  Mirror Node   │  │ SaucerSwap V1 / V2   │     │
+│    │  Nodes     │  │  REST API      │  │ smart contracts       │     │
 │    └────────────┘  └────────────────┘  └──────────────────────┘     │
 │                                         ┌──────────────────────┐    │
 │                                         │ SaucerSwap REST API  │    │
-│                                         │ (pool data / prices) │    │
+│                                         │ (V1 /v2 pools, keys)│    │
 │                                         └──────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -173,39 +188,43 @@ Agents manage fund accounts through the `account` plugin.
 
 Agents read DEX and token state through read-only commands.
 
-| Capability             | Command                                       | Notes                      |
-| ---------------------- | --------------------------------------------- | -------------------------- |
-| List liquidity pools   | `saucerswap list --token <id>`                | All pools for a token      |
-| View pool details      | `saucerswap view --token-a <A> --token-b <B>` | Reserves, price, TVL       |
-| Token information      | `token view --token <id>`                     | Decimals, supply, metadata |
-| Account token balances | `account balance --account <id>`              | Current holdings           |
+| Capability             | Command                                                                   | Notes                                                                  |
+| ---------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| List V1 pools (REST)   | `saucerswap-v1 list --api-key <key> [--token …]`                          | Optional token filter (ID / symbol / name substring)                   |
+| View V1 pair (REST)    | `saucerswap-v1 view --api-key <key> -a <A> -b <B>`                        | Reserves and pool contract id from API (token ids resolved via mirror) |
+| List V2 pools (REST)   | `saucerswap-v2 list-pools --api-key <key> [--token …] [--fee-tier …]`     | V2 concentrated-liquidity pools                                        |
+| View V2 pool           | `saucerswap-v2 view-pool --api-key <key> -a <A> -b <B> --fee-tier <tier>` | `tier` ∈ {500, 1500, 3000, 10000}; on-chain `getPool` + API enrichment |
+| List V2 NFT positions  | `saucerswap-v2 list-positions --api-key <key> [--account …]`              | Positions for operator or given account                                |
+| Token information      | `token view` (host CLI)                                                   | Decimals, supply, metadata — see host plugin options                   |
+| Account token balances | `account balance` (host CLI)                                              | Current holdings                                                       |
 
-**Agent pattern:** The Market Observer agent polls these commands on an interval, builds a local price/liquidity model, and publishes snapshots to the Strategy Engine.
+**Agent pattern:** The Market Observer agent polls these commands on an interval, builds a local price/liquidity model, and publishes snapshots to the Strategy Engine. **V1/V2 pool metadata requires a valid SaucerSwap API key** (`--api-key`).
 
 ### 4.3 Trade Execution
 
-Agents execute swaps, transfers, and liquidity operations.
+Agents execute swaps, transfers, and (separately) liquidity operations.
 
-| Capability       | Command             | Notes                                 |
-| ---------------- | ------------------- | ------------------------------------- |
-| Swap tokens      | `saucerswap swap`   | Exact-input swaps with slippage       |
-| Buy exact amount | `saucerswap buy`    | Exact-output swaps                    |
-| Transfer HBAR    | `hbar transfer`     | Native currency movement              |
-| Transfer tokens  | `token transfer-ft` | Fungible token movement               |
-| Associate tokens | `token associate`   | Required before receiving a new token |
+| Capability         | Command                                                                   | Notes                                                       |
+| ------------------ | ------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| V1 swap (exact in) | `saucerswap-v1 swap --from … --to … --amount …`                           | Slippage / `min-output`, deadline, gas per ADR-001          |
+| V1 buy (exact out) | `saucerswap-v1 buy --from … --to … --amount … [--max-input …]`            | Optional max input from router quote                        |
+| V2 swap (exact in) | `saucerswap-v2 swap --from … --to … --amount … --fee-tier …`              | Single pool / single fee tier; path encoding in plugin      |
+| V2 buy (exact out) | `saucerswap-v2 buy --from … --to … --amount … --max-input … --fee-tier …` | Caps input; payable HBAR path when `from` is HBAR           |
+| Transfer HBAR      | `hbar transfer` (host CLI)                                                | Native currency movement                                    |
+| Transfer tokens    | `token transfer-ft` (host CLI)                                            | Fungible token movement                                     |
+| Associate tokens   | `token associate` (host CLI)                                              | Required before receiving a new token                       |
+| ERC-20 allowance   | `contract` / `contract-erc20` (host CLI)                                  | As needed so routers can pull tokens (V1/V2 token-in paths) |
 
-**Agent pattern:** The Execution Agent translates Strategy Engine intents ("buy 1000 USDC with HBAR") into specific CLI commands with calculated slippage and deadline parameters.
+**Agent pattern:** The Execution Agent translates Strategy Engine intents into specific plugin commands with slippage, deadline, **and for V2 an explicit fee tier**. Token references follow host patterns: Hedera ID, alias, EVM address where supported, and `HBAR` / WHBAR id per plugin docs.
 
 ### 4.4 Liquidity Management
 
-Agents provide and withdraw liquidity to earn fees.
+| Protocol | Add / remove / fees                                                                       | Notes                                                                                    |
+| -------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **V1**   | `saucerswap-v1 deposit`, `saucerswap-v1 withdraw`                                         | Constant-product pools; fungible LP (8 decimals in plugin constants)                     |
+| **V2**   | `saucerswap-v2 mint-position`, `increase-liquidity`, `decrease-liquidity`, `collect-fees` | NFT positions; ticks, fee tier, optional `unwrap-hbar` / `burn` on decrease per manifest |
 
-| Capability         | Command               | Notes                |
-| ------------------ | --------------------- | -------------------- |
-| Deposit liquidity  | `saucerswap deposit`  | Add to existing pool |
-| Withdraw liquidity | `saucerswap withdraw` | Remove from pool     |
-
-**Agent pattern:** A yield-farming strategy that allocates capital to high-fee pools, rebalances based on impermanent loss calculations, and withdraws when APY drops below a threshold.
+**Agent pattern:** V1: classic LP deposit/withdraw. V2: manage NFT serials (`list-positions`), adjust liquidity in-range, collect fees — aligns with ADR-002 concentrated-liquidity model.
 
 ### 4.5 Atomic Batch Operations (Rebalancing)
 
@@ -223,9 +242,9 @@ The `batch` plugin enables atomic, multi-step portfolio rebalancing.
 
 ```bash
 hcli batch create --name rebalance-42 --key fund-operator
-hcli saucerswap withdraw --token-a USDC --token-b HBAR --liquidity 50 --batch rebalance-42
-hcli saucerswap swap --token-in HBAR --token-out SAUCE --amount-in 200 --batch rebalance-42
-hcli saucerswap deposit --token-a SAUCE --token-b USDC --amount-a 200 --batch rebalance-42
+hcli saucerswap-v1 withdraw --token-a USDC --token-b HBAR --liquidity 50 --batch rebalance-42
+hcli saucerswap-v1 swap --from HBAR --to SAUCE --amount 200 --batch rebalance-42
+hcli saucerswap-v1 deposit --token-a SAUCE --token-b USDC --amount-a 200 --amount-b 1000 --batch rebalance-42
 hcli batch execute --name rebalance-42
 ```
 
@@ -250,7 +269,7 @@ The `schedule` plugin provides deferred, multi-party approval for high-value ope
 # Risk agent defers a large trade
 hcli schedule create --name large-swap --admin-key compliance-officer \
     --expiration "2026-04-03T18:00:00.000+02:00"
-hcli saucerswap swap --token-in HBAR --token-out USDC --amount-in 50000 \
+hcli saucerswap-v1 swap --from HBAR --to USDC --amount 50000 \
     --slippage 1.0 --scheduled large-swap
 
 # Human fund managers approve
@@ -274,7 +293,7 @@ hcli schedule verify --name large-swap
 │    Market    │     │   Strategy   │     │  Execution   │
 │   Observer   │────▶│    Engine    │────▶│    Agent     │
 │              │     │              │     │              │
-│ saucerswap   │     │ "Buy 500     │     │ saucerswap   │
+│ saucerswap-v1│     │ "Buy 500     │     │ saucerswap-v1│
 │ view → JSON  │     │  USDC with   │     │ swap →       │
 │              │     │  HBAR"       │     │ JSON result  │
 └──────────────┘     └──────────────┘     └──────────────┘
@@ -285,10 +304,10 @@ hcli schedule verify --name large-swap
 1. **Market Observer** runs:
 
    ```bash
-   hcli saucerswap view --token-a HBAR --token-b USDC --format json
+   hcli saucerswap-v1 view --api-key <SAUCERSWAP_API_KEY> -a HBAR -b USDC --format json
    ```
 
-   Parses JSON: `{ "reserveA": "...", "reserveB": "...", "price": "0.082", ... }`
+   Parses JSON (shape per `SaucerSwapV1ViewOutputSchema`): e.g. `reserveA`, `reserveB`, `poolContractId`, `tokenA`, `tokenB` — agent may derive an implied price off-chain from reserves and decimals.
 
 2. **Strategy Engine** receives the price snapshot, compares against its 24h moving average, and emits intent:
 
@@ -310,8 +329,8 @@ hcli schedule verify --name large-swap
 4. **Execution Agent** runs:
 
    ```bash
-   hcli saucerswap swap --token-in HBAR --token-out USDC \
-       --amount-in 5000 --slippage 0.5 --format json
+   hcli saucerswap-v1 swap --from HBAR --to USDC \
+       --amount 5000 --slippage 0.5 --format json
    ```
 
 5. **Execution Agent** logs the JSON result (transaction ID, amounts, network) to the audit trail.
@@ -334,10 +353,10 @@ hcli schedule verify --name large-swap
    hcli token transfer-ft --token USDC --from fund-treasury --to fund-operator \
        --amount 1000 --batch rebalance-2026-04-02
 
-   hcli saucerswap swap --token-in HBAR --token-out SAUCE \
-       --amount-in 2000 --slippage 1.0 --batch rebalance-2026-04-02
+   hcli saucerswap-v1 swap --from HBAR --to SAUCE \
+       --amount 2000 --slippage 1.0 --batch rebalance-2026-04-02
 
-   hcli saucerswap deposit --token-a SAUCE --token-b USDC \
+   hcli saucerswap-v1 deposit --token-a SAUCE --token-b USDC \
        --amount-a 500 --amount-b 1000 --slippage 2.0 --batch rebalance-2026-04-02
    ```
 
@@ -370,8 +389,8 @@ hcli schedule verify --name large-swap
 2. **Execution Agent** attaches the trade to the schedule:
 
    ```bash
-   hcli saucerswap swap --token-in HBAR --token-out USDC \
-       --amount-in 50000 --slippage 1.0 \
+   hcli saucerswap-v1 swap --from HBAR --to USDC \
+       --amount 50000 --slippage 1.0 \
        --scheduled large-trade-001
    ```
 
@@ -406,7 +425,7 @@ hcli schedule verify --name large-swap
 1. **Discovery:**
 
    ```bash
-   hcli saucerswap list --token SAUCE --format json
+   hcli saucerswap-v1 list --api-key <SAUCERSWAP_API_KEY> --token SAUCE --format json
    ```
 
    Returns all pools with SAUCE, including reserves and implied APY data.
@@ -414,14 +433,14 @@ hcli schedule verify --name large-swap
 2. **Deposit:**
 
    ```bash
-   hcli saucerswap deposit --token-a SAUCE --token-b USDC \
+   hcli saucerswap-v1 deposit --token-a SAUCE --token-b USDC \
        --amount-a 1000 --amount-b 500 --slippage 2.0 --format json
    ```
 
 3. **Monitoring (periodic):**
 
    ```bash
-   hcli saucerswap view --token-a SAUCE --token-b USDC --format json
+   hcli saucerswap-v1 view --api-key <SAUCERSWAP_API_KEY> -a SAUCE -b USDC --format json
    hcli account balance --account fund-operator --format json
    ```
 
@@ -429,7 +448,7 @@ hcli schedule verify --name large-swap
 
 4. **Withdrawal (when IL exceeds threshold):**
    ```bash
-   hcli saucerswap withdraw --token-a SAUCE --token-b USDC \
+   hcli saucerswap-v1 withdraw --token-a SAUCE --token-b USDC \
        --liquidity 100 --slippage 2.0 --format json
    ```
 
@@ -439,34 +458,48 @@ hcli schedule verify --name large-swap
 
 ### 6.1 Plugin Model Usage
 
-The Agentic Hedge Fund uses the following plugins from the Hiero CLI:
+The **host** Hiero CLI (`@hiero-ledger/hiero-cli`) supplies core plugins; **this repository** adds `saucerswap-v1` and `saucerswap-v2` as documented in ADR-001 and ADR-002.
 
-| Plugin                 | Role in the Fund                                                        | Commands Used                                        |
-| ---------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------- |
-| **account**            | Wallet management: create fund accounts, check balances, import wallets | `create`, `balance`, `list`, `import`, `view`        |
-| **hbar**               | Native currency transfers between fund accounts                         | `transfer`                                           |
-| **token**              | Token transfers, association, metadata queries                          | `transfer-ft`, `associate`, `view`, `list`           |
-| **saucerswap** _(new)_ | DEX operations: swaps, liquidity, pool queries                          | `swap`, `buy`, `deposit`, `withdraw`, `list`, `view` |
-| **batch**              | Atomic multi-operation rebalancing                                      | `create`, `execute`, `list`, `delete`                |
-| **schedule**           | Multi-sig governance for large trades                                   | `create`, `sign`, `delete`, `verify`                 |
+**Core host plugins (representative — see fork `src/plugins/*/manifest.ts` for the full command list):**
+
+| Plugin                                               | Role in the fund                       | Representative commands                                                                  |
+| ---------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **account**                                          | Wallets, balances                      | `create`, `balance`, `list`, `import`, `view`, `update`, `delete`, `clear`               |
+| **hbar**                                             | Native transfers                       | `transfer`                                                                               |
+| **token**                                            | HTS fungible/non-fungible ops          | `transfer-ft`, `transfer-nft`, `associate`, `create-ft`, `mint-ft`, `burn-ft`, `view`, … |
+| **contract**                                         | Generic contract calls / deploy flows  | As exposed by host CLI                                                                   |
+| **contract-erc20** / **contract-erc721**             | ERC-style helpers                      | As exposed by host CLI                                                                   |
+| **batch**                                            | HIP-551 atomic batches                 | `create`, `execute`, `list`, `delete` (+ `batchify-*` hook commands)                     |
+| **schedule**                                         | Scheduled / multi-party txs            | `create`, `sign`, `delete`, `verify` (+ `scheduled` hook)                                |
+| **network**                                          | Network selection / config             | As exposed by host CLI                                                                   |
+| **config** / **credentials** / **plugin-management** | CLI configuration and plugin lifecycle | As exposed by host CLI                                                                   |
+
+**First-party DEX plugins (this repo):**
+
+| Plugin            | Role                                    | Commands                                                                                                                                |
+| ----------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **saucerswap-v1** | Uniswap V2–style AMM (constant product) | `swap`, `buy`, `deposit`, `withdraw`, `list`, `view`                                                                                    |
+| **saucerswap-v2** | V3-style concentrated liquidity         | `swap`, `buy`, `mint-position`, `increase-liquidity`, `decrease-liquidity`, `collect-fees`, `list-pools`, `view-pool`, `list-positions` |
+
+Transactional DEX commands are implemented to align with host patterns (**`BaseTransactionCommand`**, Zod inputs, structured outputs) and are candidates for **`--batch`** / **`--scheduled`** where the host hook registration matches other transaction plugins (see ADR-001 / ADR-002).
 
 ### 6.2 Core API Services Leveraged
 
 Each CLI command handler receives `CoreApi` via dependency injection. The fund leverages:
 
-| Service                              | Usage                                                                         |
-| ------------------------------------ | ----------------------------------------------------------------------------- |
-| `api.keyResolver`                    | Resolve agent key aliases → signing credentials without exposing private keys |
-| `api.kms`                            | Encrypted key storage (`local_encrypted` key manager for production)          |
-| `api.mirror`                         | Read account info, token info, scheduled transaction state from Mirror Node   |
-| `api.txSign` / `api.txExecute`       | Build, sign, and submit Hedera transactions                                   |
-| `api.state`                          | Persist fund state: batch definitions, schedule records, plugin-specific data |
-| `api.network`                        | Network resolution (testnet for dev, mainnet for production)                  |
-| `api.config`                         | Runtime options (key manager type, log level, skip confirmations)             |
-| `api.schedule`                       | Build `ScheduleCreate`, `ScheduleSign`, `ScheduleDelete` transactions         |
-| `api.batch`                          | Build atomic `BatchTransaction` from collected transaction bytes              |
-| `api.contract` / `api.contractQuery` | Direct smart contract interaction (SaucerSwap Router/Factory)                 |
-| `api.identityResolution`             | Resolve token/account references to entity IDs and EVM addresses              |
+| Service                              | Usage                                                                                                                                                                   |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api.keyResolver`                    | Resolve agent key aliases → signing credentials without exposing private keys                                                                                           |
+| `api.kms`                            | Encrypted key storage (`local_encrypted` key manager for production)                                                                                                    |
+| `api.mirror`                         | Read account info, token info, scheduled transaction state from Mirror Node                                                                                             |
+| `api.txSign` / `api.txExecute`       | Build, sign, and submit Hedera transactions                                                                                                                             |
+| `api.state`                          | Persist fund state: batch definitions, schedule records, plugin-specific data                                                                                           |
+| `api.network`                        | Network resolution (testnet for dev, mainnet for production)                                                                                                            |
+| `api.config`                         | Runtime options (key manager type, log level, skip confirmations)                                                                                                       |
+| `api.schedule`                       | Build `ScheduleCreate`, `ScheduleSign`, `ScheduleDelete` transactions                                                                                                   |
+| `api.batch`                          | Build atomic `BatchTransaction` from collected transaction bytes                                                                                                        |
+| `api.contract` / `api.contractQuery` | Contract writes/queries — V1 router/factory via SDK parameters; V2 swap/NFPM often builds raw calldata (`ContractExecuteTransaction.setFunctionParameters`) per ADR-002 |
+| `api.identityResolution`             | Resolve token/account references to entity IDs and EVM addresses                                                                                                        |
 
 ### 6.3 Hook System Integration
 
@@ -545,7 +578,8 @@ The Execution Agent parses the exit code and JSON error output to decide on retr
 ### In Scope (Demo v1)
 
 - [ ] **Agent scripts** (TypeScript or Python) implementing the four flows described above
-- [ ] **SaucerSwap plugin** implementation (ADR-013) with `swap`, `buy`, `list`, `view`, `deposit`, `withdraw`, `create-pool` commands
+- [ ] **SaucerSwap V1 plugin** per ADR-001: `swap`, `buy`, `list`, `view`, `deposit`, `withdraw` (plus shared `SaucerSwapApiService` / `--api-key` for REST)
+- [ ] **SaucerSwap V2 plugin** per ADR-002: swaps, concentrated-liquidity lifecycle, V2 REST list/view/positions
 - [ ] **Example strategy**: simple mean-reversion or rebalancing strategy
 - [ ] **Testnet deployment**: all demo operations on Hedera testnet
 - [ ] **Audit logging**: agent logs every CLI invocation with input/output to a local file
@@ -566,20 +600,17 @@ The Execution Agent parses the exit code and JSON error output to decide on retr
 
 ## 8. Technical Requirements
 
-### 8.1 SaucerSwap Plugin (Prerequisite)
+### 8.1 SaucerSwap plugins (prerequisite)
 
-The SaucerSwap DEX plugin must be implemented per the proposed ADR-013 design:
+Implementation is defined in **ADR-001** (V1) and **ADR-002** (V2). Summary:
 
-| Command               | Contract Function                        | Notes                        |
-| --------------------- | ---------------------------------------- | ---------------------------- |
-| `saucerswap swap`     | `swapExact*For*` variants                | HBAR/token routing via WHBAR |
-| `saucerswap buy`      | `swap*ForExact*` variants                | Exact-output swaps           |
-| `saucerswap deposit`  | `addLiquidity` / `addLiquidityETH`       | With new-pool detection      |
-| `saucerswap withdraw` | `removeLiquidity` / `removeLiquidityETH` | LP token burn                |
-| `saucerswap list`     | SaucerSwap REST API                      | Pool discovery               |
-| `saucerswap view`     | SaucerSwap REST API                      | Pool details                 |
+**V1 (`saucerswap-v1`)** — Uniswap V2–style router/factory; `swap` / `buy` use `ContractFunctionParameters` and path `address[]`. **`list`** / **`view`** use **`SaucerSwapApiService.fetchAllPools`** / **`findV1PoolForTokenPair`** with user **`--api-key`**. **`deposit`** / **`withdraw`** call `addLiquidity*` / `removeLiquidity*`.
 
-Must register `batchify` and `scheduled` hooks on transactional commands.
+**V2 (`saucerswap-v2`)** — SwapRouter / NonfungiblePositionManager / Factory; **ABI-encoded structs** and **`multicall`** per ADR-002. **`swap`** / **`buy`** require **`--fee-tier`**. Read-only **`list-pools`**, **`view-pool`**, **`list-positions`** use V2 REST endpoints via the same shared API service (**`--api-key`**).
+
+**Shared:** `src/shared/services/saucerswap-api/`, `SaucerSwapApiKeySchema` and API payload schemas in `src/shared/schemas/schemas.ts`, shared utils under `src/shared/util/`.
+
+Transactional commands should follow host conventions for **`batchify`** and **`scheduled`** hooks where registered (same pattern as **hbar**, **token**, **account** commands in the fork).
 
 ### 8.2 Agent Framework
 
@@ -613,7 +644,7 @@ Must register `batchify` and `scheduled` hooks on transactional commands.
 4. **Multi-sig governance** (Flow 3) demonstrates that a large trade requires multiple human approvals before execution
 5. **No private keys are exposed** to agent code — all signing uses key aliases resolved by the CLI
 6. **A new developer can run the demo** in under 15 minutes using the provided README
-7. **The demo showcases at least 6 plugins** working together in a single scenario
+7. **The demo showcases multiple host plugins plus both SaucerSwap plugins** working together in a single scenario (e.g. account + token + hbar + batch + schedule + `saucerswap-v1` and/or `saucerswap-v2`)
 
 ---
 
@@ -630,5 +661,8 @@ Must register `batchify` and `scheduled` hooks on transactional commands.
 | **Slippage**            | Maximum acceptable price deviation for DEX operations                                          |
 | **LP Token**            | Liquidity Provider token received when depositing into a DEX pool                              |
 | **WHBAR**               | Wrapped HBAR (ERC-20 representation used by SaucerSwap for HBAR pairs)                         |
+| **saucerswap-v1**       | First-party CLI plugin: SaucerSwap constant-product AMM (ADR-001)                              |
+| **saucerswap-v2**       | First-party CLI plugin: SaucerSwap concentrated liquidity / V3-style protocol (ADR-002)        |
+| **Fee tier (V2)**       | Pool fee level (e.g. 500 = 0.05%, 10000 = 1%); required for V2 swaps and pool view             |
 | **Mirror Node**         | Hedera's read-only API for historical and current chain state                                  |
 | **CoreApi**             | The dependency-injected service container available to all CLI command handlers                |
