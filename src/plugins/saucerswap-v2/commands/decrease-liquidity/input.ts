@@ -12,13 +12,10 @@ export const SaucerSwapV2DecreaseLiquidityInputSchema = z.object({
     .int()
     .positive()
     .describe('NFT position serial (tokenId)'),
-  liquidity: z.union([
-    z.literal('all'),
-    z
-      .string()
-      .trim()
-      .regex(/^\d+$/, 'Liquidity must be "all" or a non-negative integer'),
-  ]),
+  liquidity: z
+    .string()
+    .trim()
+    .regex(/^\d+$/, 'Liquidity must be a non-negative integer'),
   slippage: SlippageTolerancePercentSchema.default(0.5).describe(
     'Slippage tolerance (%) for minimums on token amounts (if used)',
   ),

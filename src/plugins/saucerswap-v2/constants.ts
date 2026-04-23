@@ -76,11 +76,5 @@ export const SaucerSwapV2FeeTierSchema = z
     message: 'Fee tier must be one of 500, 1500, 3000, 10000',
   });
 
-export const DEFAULT_SWAP_GAS = 300_000;
-export const DEFAULT_MINT_POSITION_GAS = 900_000;
-export const DEFAULT_INCREASE_LIQUIDITY_GAS = 330_000;
-export const DEFAULT_DECREASE_LIQUIDITY_GAS = 300_000;
-export const DEFAULT_COLLECT_FEES_GAS = 300_000;
-export const DEFAULT_DEADLINE_SECONDS = 180;
-export const DEFAULT_SLIPPAGE_PERCENT = 0.5;
 export const MAX_UINT128 = (1n << 128n) - 1n;
+export const EVM_0_ADDRESS = '0x0000000000000000000000000000000000000000';

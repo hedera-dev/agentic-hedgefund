@@ -22,14 +22,12 @@ export class SaucerSwapV2ListPositionsCommand implements Command {
     const network = api.network.getCurrentNetwork();
     const config = getSaucerSwapV2Config(network);
 
-    const accountId = validArgs.account
-      ? api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.account.value,
-          referenceType: validArgs.account.type,
+    const account = await api.identityResolution.resolveAccount({
+          accountReference: validArgs.account.value,
+          type: validArgs.account.type,
           network,
-          aliasType: AliasType.Account,
-        }).entityIdOrEvmAddress
-      : api.network.getCurrentOperatorOrThrow().accountId;
+        });
+    const accountId = account.accountId;
 
     const positions = await this.saucerSwapApi.fetchV2Positions(
       config.apiBaseUrl,

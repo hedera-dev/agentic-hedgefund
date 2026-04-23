@@ -7,6 +7,7 @@ import type { SaucerSwapApiService } from '@/shared/services/saucerswap-api/sauc
 import type { SaucerSwapV2ListPoolsOutput } from './output';
 
 import { getSaucerSwapV2Config } from '@/plugins/saucerswap-v2/constants';
+import { matchesPoolFilter } from '@/plugins/saucerswap-v2/utils/pool-filter';
 import { SaucerSwapApiServiceImpl } from '@/shared/services/saucerswap-api/saucerswap-api-service';
 
 import { SaucerSwapV2ListPoolsInputSchema } from './input';
@@ -25,22 +26,9 @@ export class SaucerSwapV2ListPoolsCommand implements Command {
       validArgs.apiKey,
     );
 
-    const filtered = pools.filter((p) => {
-      if (
-        validArgs.feeTier !== undefined &&
-        Number(p.fee) !== validArgs.feeTier
-      ) {
-        return false;
-      }
-      if (!validArgs.token) return true;
-      const norm = validArgs.token.toUpperCase();
-      return (
-        p.tokenA.id === validArgs.token ||
-        p.tokenB.id === validArgs.token ||
-        p.tokenA.symbol.toUpperCase() === norm ||
-        p.tokenB.symbol.toUpperCase() === norm
-      );
-    });
+    const filtered = pools.filter((p) =>
+      matchesPoolFilter(p, { feeTier: validArgs.feeTier, token: validArgs.token }),
+    );
 
     const outputData: SaucerSwapV2ListPoolsOutput = {
       network,

@@ -5,7 +5,7 @@ import { SaucerSwapApiKeySchema } from '@/shared/schemas/schemas';
 
 export const SaucerSwapV2ListPositionsInputSchema = z.object({
   apiKey: SaucerSwapApiKeySchema,
-  account: AccountReferenceObjectSchema.optional().describe(
-    'Account ID, EVM address, or alias (defaults to current operator).',
+  account: AccountReferenceObjectSchema.describe(
+    'Account ID, EVM address, or alias.',
   ),
 });

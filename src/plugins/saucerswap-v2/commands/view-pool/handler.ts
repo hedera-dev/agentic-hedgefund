@@ -9,7 +9,8 @@ import type { SaucerSwapV2ViewPoolOutput } from './output';
 import { Interface } from 'ethers';
 
 import { FACTORY_ABI } from '@/plugins/saucerswap-v2/abi/factory';
-import { getSaucerSwapV2Config } from '@/plugins/saucerswap-v2/constants';
+import { EVM_0_ADDRESS, getSaucerSwapV2Config } from '@/plugins/saucerswap-v2/constants';
+import { matchesApiPool } from '@/plugins/saucerswap-v2/utils/pool-filter';
 import { SaucerSwapApiServiceImpl } from '@/shared/services/saucerswap-api/saucerswap-api-service';
 import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
@@ -54,7 +55,7 @@ export class SaucerSwapV2ViewPoolCommand implements Command {
         args: [tokenAEvm, tokenBEvm, validArgs.feeTier],
       });
       const addr = getPool.queryResult[0] as string | undefined;
-      if (addr && addr !== '0x0000000000000000000000000000000000000000') {
+      if (addr && addr !== EVM_0_ADDRESS) {
         poolAddress = addr;
       }
     } catch {
@@ -68,7 +69,7 @@ export class SaucerSwapV2ViewPoolCommand implements Command {
     const apiPool = pools.find(
       (p) =>
         Number(p.fee) === validArgs.feeTier &&
-        matchesApiPool(p, tokenAEvm, tokenBEvm),
+        matchesApiPool(p.tokenA, p.tokenB, tokenAResolved.tokenInfo.token_id, tokenBResolved.tokenInfo.token_id),
     );
 
     const outputData: SaucerSwapV2ViewPoolOutput = {
@@ -89,24 +90,6 @@ export class SaucerSwapV2ViewPoolCommand implements Command {
   }
 }
 
-function matchesApiPool(
-  pool: { tokenA: { id: string }; tokenB: { id: string } },
-  tokenAEvm: string,
-  tokenBEvm: string,
-): boolean {
-  const a = tokenAEvm.toLowerCase();
-  const b = tokenBEvm.toLowerCase();
-  const idAEvm = hederaIdToEvmLower(pool.tokenA.id);
-  const idBEvm = hederaIdToEvmLower(pool.tokenB.id);
-  return (idAEvm === a && idBEvm === b) || (idAEvm === b && idBEvm === a);
-}
-
-function hederaIdToEvmLower(id: string): string {
-  const match = /^0\.0\.(\d+)$/.exec(id);
-  if (!match) return id.toLowerCase();
-  const hex = BigInt(match[1]).toString(16).padStart(40, '0');
-  return `0x${hex}`;
-}
 
 export async function saucerswapV2ViewPool(
   args: CommandHandlerArgs,

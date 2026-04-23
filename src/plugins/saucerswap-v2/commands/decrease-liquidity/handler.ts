@@ -53,8 +53,7 @@ export class SaucerSwapV2DecreaseLiquidityCommand extends BaseTransactionCommand
     const recipientAccount = await this.saucerSwapHelper.resolveRecipient();
     const recipient = recipientAccount.evmAddress!;
 
-    const liquidity =
-      validArgs.liquidity === 'all' ? MAX_UINT128 : BigInt(validArgs.liquidity);
+    const liquidity = BigInt(validArgs.liquidity);
 
     return {
       config,
