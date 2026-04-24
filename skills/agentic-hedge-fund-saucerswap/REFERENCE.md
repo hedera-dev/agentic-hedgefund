@@ -17,7 +17,7 @@ If a command ever returns a non-JSON line to stdout, abort the phase and log an 
 | Plugin          | File                                         | Commands the skill uses                                                   |
 | --------------- | -------------------------------------------- | ------------------------------------------------------------------------- |
 | `account`       | [`references/account.md`](references/account.md)             | `view` (phase 1), `balance` (phases 1, 5, 7)                              |
-| `token`         | [`references/token.md`](references/token.md)                 | `view` (phase 2), `associate` (phase 6), `allowance-ft` (phase 6); `transfer-ft`, `transfer-nft` available as remediation only |
+| `token`         | [`references/token.md`](references/token.md)                 | `view` (phase 2), `import` (phase 2 — alias registration), `associate` (phase 6), `allowance-ft` (phase 6); `transfer-ft`, `transfer-nft` available as remediation only |
 | `hbar`          | [`references/hbar.md`](references/hbar.md)                   | `transfer` — only when the caller explicitly tops up the operator         |
 | `network`       | [`references/network.md`](references/network.md)             | `view` (phase 1); `use` / `set-operator` run manually by the caller       |
 | `saucerswap-v1` | [`references/saucerswap-v1.md`](references/saucerswap-v1.md) | `view`, `list` (phase 3), `swap` or `buy` (phase 7); `deposit` / `withdraw` documented but unused by Flow 1 |

@@ -9,8 +9,8 @@ export SAUCERSWAP_API_KEY="…"
 export OP=0.0.5000001
 export ROUTER=0.0.19264              # SaucerSwap V1 router (testnet)
 export AUDIT=./audit/agentic-hedge-fund.jsonl
-export USDC=0.0.429274                # example testnet USDC
-export SAUCE=0.0.1183558              # example testnet SAUCE
+export USDC=0.0.429274               # raw token ID — alias registered in phase 2
+export SAUCE=0.0.1183558             # raw token ID — alias registered in phase 2
 ```
 
 ---
@@ -41,6 +41,15 @@ Skip `token view` for `HBAR` (decimals=8, symbol=`HBAR`).
 ```bash
 hcli token view -T $USDC --format json
 # {"tokenId":"0.0.429274","symbol":"USDC","decimals":6, ...}
+```
+
+`$USDC` is a raw Hedera ID — register the alias so all later commands use `USDC`:
+
+```bash
+hcli token import -T 0.0.429274 -n USDC --format json
+# {"tokenId":"0.0.429274","name":"USD Coin","symbol":"USDC","alias":"USDC", ...}
+
+USDC=USDC   # replace raw-ID var with alias for phases 3–7
 ```
 
 ### Phase 3 — Observation
@@ -122,8 +131,24 @@ Intent: sell exactly 1,000 SAUCE when its USDC price has fallen 2 % below baseli
 
 ### Highlights
 
-- Phase 2 reads decimals for both SAUCE (6) and USDC (6).
+- Phase 2 reads decimals for both SAUCE (6) and USDC (6). Both are raw IDs → `token import` runs for each, setting aliases `SAUCE` and `USDC`, then `SAUCE` and `USDC` vars are overwritten with the aliases.
 - Phase 6 has **two** remediation steps — associate USDC if missing, then grant the router an HTS allowance for 1,000 SAUCE in base units.
+
+### Phase 2 — Token metadata (alias registration)
+
+```bash
+hcli token view -T $SAUCE --format json
+# {"tokenId":"0.0.1183558","symbol":"SAUCE","decimals":6, ...}
+hcli token import -T 0.0.1183558 -n SAUCE --format json
+# {"tokenId":"0.0.1183558","alias":"SAUCE", ...}
+
+hcli token view -T $USDC --format json
+# {"tokenId":"0.0.429274","symbol":"USDC","decimals":6, ...}
+hcli token import -T 0.0.429274 -n USDC --format json
+# {"tokenId":"0.0.429274","alias":"USDC", ...}
+
+SAUCE=SAUCE; USDC=USDC   # use aliases from here on
+```
 
 ### Phase 6 — Prepare (the interesting part)
 
@@ -160,7 +185,7 @@ If phase 7 returns `TransactionPrecheckError` with code `SPENDER_DOES_NOT_HAVE_A
 
 ## Example C — HBAR → SAUCE via `buy` (exact output)
 
-Intent: acquire exactly 5,000 SAUCE when its HBAR price has fallen ≥ 2 % below baseline. Input side is HBAR, so no allowance step.
+Intent: acquire exactly 5,000 SAUCE when its HBAR price has fallen ≥ 2 % below baseline. Input side is HBAR, so no allowance step. Phase 2 imports SAUCE and sets the alias — same pattern as Example B.
 
 ### Phase 4 — Decision → `buy`
 

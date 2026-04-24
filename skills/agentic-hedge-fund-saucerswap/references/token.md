@@ -147,10 +147,36 @@ List tokens tracked in local state.
 
 ---
 
+### `hcli token import` *(used by the skill — phase 2, alias registration)*
+
+Register an existing on-chain token in local CLI state and optionally assign it a short alias. After import, the alias can be used wherever a token ID is accepted (`token view`, `token associate`, `allowance-ft`, swap commands, etc.).
+
+| Option     | Short | Type   | Required | Default | Description                                                                  |
+| ---------- | ----- | ------ | -------- | ------- | ---------------------------------------------------------------------------- |
+| `--token`  | `-T`  | string | **yes**  | —       | Token ID to import (e.g. `0.0.429274`).                                      |
+| `--name`   | `-n`  | string | no       | —       | Alias to assign. The skill uses the token's `symbol` from `token view`.      |
+
+**Example:**
+
+```
+hcli token import -T 0.0.429274 -n USDC --format json
+hcli token import -T 0.0.1183558 -n SAUCE --format json
+```
+
+**Output:** `{ tokenId, name, symbol, type, network, memo?, adminKeyPresent, supplyKeyPresent, alias? }`
+
+`alias` in the output is the name you passed via `--name`. If the token was already imported under the same alias, the command is idempotent.
+
+**How the skill uses it:** In phase 2, after `token view` returns successfully, the skill checks whether the token reference was a raw Hedera ID. If so, it calls `token import -T $TOKEN_ID -n $SYMBOL --format json` where `$SYMBOL` is the `symbol` field from `token view` (e.g. `USDC`, `SAUCE`, `WHBAR`). All subsequent commands in phases 3–7 then reference the token by alias rather than raw ID.
+
+**Alias collision rule:** If a different token already occupies the `$SYMBOL` alias (detectable because `token view -T $SYMBOL --format json` returns a different `tokenId`), append the last four digits of the token ID to disambiguate — e.g. `USDC_4274`. Surface the chosen alias to the caller before proceeding.
+
+---
+
 ### Other token commands (not used by the skill)
 
 Mentioned here so you know the surface area and can reach for them if a workflow extends beyond Flow 1:
 
-`burn-ft`, `burn-nft`, `mint-ft`, `mint-nft`, `airdrop-ft`, `airdrop-nft`, `cancel-airdrop`, `create-nft`, `create-ft-from-file`, `create-nft-from-file`, `delete`, `freeze`, `unfreeze`, `delete-allowance-nft`, `import`, `pending-airdrops`, `claim-airdrop`, `reject-airdrop`.
+`burn-ft`, `burn-nft`, `mint-ft`, `mint-nft`, `airdrop-ft`, `airdrop-nft`, `cancel-airdrop`, `create-nft`, `create-ft-from-file`, `create-nft-from-file`, `delete`, `freeze`, `unfreeze`, `delete-allowance-nft`, `pending-airdrops`, `claim-airdrop`, `reject-airdrop`.
 
 Consult `hcli token <cmd> --help` for flags.

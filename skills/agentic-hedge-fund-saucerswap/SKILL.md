@@ -61,6 +61,8 @@ Run phases in order. **Do not proceed to phase 7 if phase 5 or 6 rejects the pla
 
 1. **Preflight** — `hcli network list --format json`; `hcli account view -a $OP --format json`; `hcli account balance -a $OP --format json`. Confirm testnet, operator exists, HBAR balance ≥ `balanceFloorHbar`.
 2. **Token metadata** — `hcli token view -T $TA --format json`; `hcli token view -T $TB --format json`. Cache `decimals` and `symbol`; skip `token view` for the literal `HBAR` and substitute decimals=8.
+   - **Alias registration:** after each `token view`, if the token was referenced by a raw Hedera ID (matches `\d+\.\d+\.\d+`), call `hcli token import -T $TOKEN_ID -n $SYMBOL --format json` using the `symbol` returned by `token view` as the alias. Replace the raw-ID reference with the alias for all subsequent commands (phases 3–7).
+   - **Collision guard:** if `token view -T $SYMBOL --format json` returns a different `tokenId` (alias already taken), use `${SYMBOL}_${TOKEN_ID_LAST4}` (e.g. `USDC_4274`) as the alias and surface it to the caller before continuing.
 3. **Observation**
    - **V1:** `hcli saucerswap-v1 view --api-key "$KEY" -a $TA -b $TB --format json`. Pipe `reserveA`/`reserveB` + decimals into `scripts/implied-price.mjs`.
    - **V2:** `hcli saucerswap-v2 view-pool --api-key "$KEY" -a $TA -b $TB --fee-tier $FEE_TIER --format json`. Pipe `sqrtRatioX96`/`tickCurrent` + decimals into `scripts/implied-price.mjs`. Abort if `poolAddress` or `sqrtRatioX96` is `null`.
