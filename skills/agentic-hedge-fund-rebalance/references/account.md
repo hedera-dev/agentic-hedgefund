@@ -1,25 +1,26 @@
 # account plugin (rebalance commands)
 
-### `hcli account balance` *(used by the skill — phases 2, 4, 5)*
+### `hcli account balance` _(used by the skill — phases 2, 4, 5)_
 
-| Option      | Short | Type   | Required | Description                          |
-| ----------- | ----- | ------ | -------- | ------------------------------------ |
-| `--account` | `-a`  | string | **yes**  | Account ID or alias to query.        |
+| Option      | Short | Type   | Required | Description                   |
+| ----------- | ----- | ------ | -------- | ----------------------------- |
+| `--account` | `-a`  | string | **yes**  | Account ID or alias to query. |
 
 **Output:** `{ accountId, hbar, tokens: [{ tokenId, balance }], network }`
 
 **How the skill uses it:**
+
 - Phase 2: checks HBAR balance (for swap pre-flight) and token balances (for association checks and treasury transfer validation).
 - Phase 4: captures `balancesBefore` immediately before `batch execute`.
 - Phase 5: captures `balancesAfter` immediately after successful execution.
 
 ---
 
-### `hcli account view` *(diagnostic)*
+### `hcli account view` _(diagnostic)_
 
-| Option      | Short | Type   | Required | Description                |
-| ----------- | ----- | ------ | -------- | -------------------------- |
-| `--account` | `-a`  | string | **yes**  | Account ID or alias.       |
+| Option      | Short | Type   | Required | Description          |
+| ----------- | ----- | ------ | -------- | -------------------- |
+| `--account` | `-a`  | string | **yes**  | Account ID or alias. |
 
 **Output:** `{ accountId, evmAddress, balance, network, … }`
 

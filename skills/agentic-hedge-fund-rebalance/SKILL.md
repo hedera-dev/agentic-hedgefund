@@ -22,31 +22,31 @@ Supports both **SaucerSwap V1** (constant-product, `deposit`) and **SaucerSwap V
 
 ## Version selection
 
-| `--fee-tier` supplied | Protocol used | Swap command | Deposit command |
-|---|---|---|---|
-| No | SaucerSwap V1 | `saucerswap-v1 swap` | `saucerswap-v1 deposit` |
+| `--fee-tier` supplied           | Protocol used | Swap command                    | Deposit command                          |
+| ------------------------------- | ------------- | ------------------------------- | ---------------------------------------- |
+| No                              | SaucerSwap V1 | `saucerswap-v1 swap`            | `saucerswap-v1 deposit`                  |
 | Yes (500 / 1500 / 3000 / 10000) | SaucerSwap V2 | `saucerswap-v2 swap --fee-tier` | `saucerswap-v2 mint-position --fee-tier` |
 
 `--with-transfer` is protocol-agnostic and always uses `token transfer-ft`. If `--fee-tier` is present but `--with-swap` and `--with-deposit` are both absent, abort with a validation error — `--fee-tier` is only meaningful alongside a swap or deposit step.
 
 ## Caller-supplied inputs
 
-| Input | Step flag | Required | Notes |
-|---|---|---|---|
-| `treasury` | any | if `--with-transfer` | Account alias or Hedera ID of the source treasury |
-| `transfer-token` | `--with-transfer` | yes | Token to move (ID or alias) |
-| `transfer-amount` | `--with-transfer` | yes | Display units |
-| `swap-from` | `--with-swap` | yes | Input token: Hedera ID, alias, or `HBAR` |
-| `swap-to` | `--with-swap` | yes | Output token: Hedera ID, alias, or `HBAR` |
-| `swap-amount` | `--with-swap` | yes | Exact input amount, display units |
-| `swap-slippage` | `--with-swap` | no | %, default `0.5` |
-| `fee-tier` | `--with-swap` or `--with-deposit` | V2 only | `500`, `1500`, `3000`, or `10000` — presence selects V2 |
-| `deposit-token-a` | `--with-deposit` | yes | First token of the LP pair |
-| `deposit-token-b` | `--with-deposit` | yes | Second token of the LP pair |
-| `deposit-amount-a` | `--with-deposit` | yes | Desired amount for token A, display units |
-| `deposit-amount-b` | `--with-deposit` | yes | Desired amount for token B, display units |
-| `deposit-slippage` | `--with-deposit` | no | %, default `2.0` |
-| `deposit-range-percent` | `--with-deposit` | V2 only, no | Symmetric ±% tick range for `mint-position`, default `5` |
+| Input                   | Step flag                         | Required             | Notes                                                    |
+| ----------------------- | --------------------------------- | -------------------- | -------------------------------------------------------- |
+| `treasury`              | any                               | if `--with-transfer` | Account alias or Hedera ID of the source treasury        |
+| `transfer-token`        | `--with-transfer`                 | yes                  | Token to move (ID or alias)                              |
+| `transfer-amount`       | `--with-transfer`                 | yes                  | Display units                                            |
+| `swap-from`             | `--with-swap`                     | yes                  | Input token: Hedera ID, alias, or `HBAR`                 |
+| `swap-to`               | `--with-swap`                     | yes                  | Output token: Hedera ID, alias, or `HBAR`                |
+| `swap-amount`           | `--with-swap`                     | yes                  | Exact input amount, display units                        |
+| `swap-slippage`         | `--with-swap`                     | no                   | %, default `0.5`                                         |
+| `fee-tier`              | `--with-swap` or `--with-deposit` | V2 only              | `500`, `1500`, `3000`, or `10000` — presence selects V2  |
+| `deposit-token-a`       | `--with-deposit`                  | yes                  | First token of the LP pair                               |
+| `deposit-token-b`       | `--with-deposit`                  | yes                  | Second token of the LP pair                              |
+| `deposit-amount-a`      | `--with-deposit`                  | yes                  | Desired amount for token A, display units                |
+| `deposit-amount-b`      | `--with-deposit`                  | yes                  | Desired amount for token B, display units                |
+| `deposit-slippage`      | `--with-deposit`                  | no                   | %, default `2.0`                                         |
+| `deposit-range-percent` | `--with-deposit`                  | V2 only, no          | Symmetric ±% tick range for `mint-position`, default `5` |
 
 The operator is always read from hcli state (`network get-operator --format json`) — never supplied by the caller.
 
@@ -71,7 +71,7 @@ Run all checks before touching the batch. Append a `preflight` audit entry on co
 
 1. **HBAR balance** (if `--with-swap` and `swap-from` is HBAR): `hcli account balance -a $OP --format json`. Confirm `hbar` ≥ `swap-amount` + 1 HBAR floor. Abort if not.
 2. **Treasury token balance** (if `--with-transfer`): `hcli account balance -a $TREASURY --format json`. Confirm the transfer-token balance ≥ `transfer-amount`. Abort if not.
-3. **Association checks** — for each token the operator will *receive* (swap-to if `--with-swap`; transfer-token if `--with-transfer`; deposit-token-a and deposit-token-b if `--with-deposit`):
+3. **Association checks** — for each token the operator will _receive_ (swap-to if `--with-swap`; transfer-token if `--with-transfer`; deposit-token-a and deposit-token-b if `--with-deposit`):
    - `hcli account balance -a $OP --format json` → check `tokens[]` for the token.
    - If missing: `hcli token associate -T $TOKEN -a $OP --format json`. Abort if this fails.
 
@@ -81,6 +81,7 @@ Run all checks before touching the batch. Append a `preflight` audit entry on co
 2. Add operations to the batch **in this fixed order** (skip steps that don't apply). The spender for allowances depends on the version — see REFERENCE.md §3.
 
    **a. Swap allowance** (if `--with-swap` AND `swap-from` is not HBAR):
+
    ```
    # V1: spender = $V1_ROUTER
    hcli token allowance-ft -T $SWAP_FROM -o $OP -s $V1_ROUTER -a $SWAP_AMOUNT --batch $BATCH_NAME --format json
@@ -89,6 +90,7 @@ Run all checks before touching the batch. Append a `preflight` audit entry on co
    ```
 
    **b. Deposit token-A allowance** (if `--with-deposit`):
+
    ```
    # V1: spender = $V1_ROUTER
    hcli token allowance-ft -T $DEPOSIT_TOKEN_A -o $OP -s $V1_ROUTER -a $DEPOSIT_AMOUNT_A --batch $BATCH_NAME --format json
@@ -97,6 +99,7 @@ Run all checks before touching the batch. Append a `preflight` audit entry on co
    ```
 
    **c. Deposit token-B allowance** (if `--with-deposit`):
+
    ```
    # V1: spender = $V1_ROUTER
    hcli token allowance-ft -T $DEPOSIT_TOKEN_B -o $OP -s $V1_ROUTER -a $DEPOSIT_AMOUNT_B --batch $BATCH_NAME --format json
@@ -105,11 +108,13 @@ Run all checks before touching the batch. Append a `preflight` audit entry on co
    ```
 
    **d. Treasury transfer** (if `--with-transfer`) — same for V1 and V2:
+
    ```
    hcli token transfer-ft --token $TRANSFER_TOKEN --from $TREASURY --to $OP --amount $TRANSFER_AMOUNT --batch $BATCH_NAME --format json
    ```
 
    **e. Swap** (if `--with-swap`):
+
    ```
    # V1
    hcli saucerswap-v1 swap --from $SWAP_FROM --to $SWAP_TO --amount $SWAP_AMOUNT --slippage $SWAP_SLIPPAGE --batch $BATCH_NAME --format json
@@ -118,6 +123,7 @@ Run all checks before touching the batch. Append a `preflight` audit entry on co
    ```
 
    **f. Deposit / mint-position** (if `--with-deposit`):
+
    ```
    # V1
    hcli saucerswap-v1 deposit --token-a $DEPOSIT_TOKEN_A --token-b $DEPOSIT_TOKEN_B --amount-a $DEPOSIT_AMOUNT_A --amount-b $DEPOSIT_AMOUNT_B --slippage $DEPOSIT_SLIPPAGE --batch $BATCH_NAME --format json

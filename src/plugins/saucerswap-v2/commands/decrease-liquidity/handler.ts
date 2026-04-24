@@ -129,6 +129,7 @@ export class SaucerSwapV2DecreaseLiquidityCommand extends BaseTransactionCommand
       burn: validArgs.burn,
       deadlineSeconds: validArgs.deadline,
       gas: validArgs.gas,
+      keyRefIds: [],
       network,
     };
   }

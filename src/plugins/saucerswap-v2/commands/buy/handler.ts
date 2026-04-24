@@ -108,6 +108,7 @@ export class SaucerSwapV2BuyCommand extends BaseTransactionCommand<
       feeTier: validArgs.feeTier,
       deadlineSeconds: validArgs.deadline,
       gas: validArgs.gas,
+      keyRefIds: [],
       network,
     };
   }

@@ -6,14 +6,14 @@ Every `hcli` invocation MUST include `--format json`. This applies to every comm
 
 ## 1. Per-plugin command reference
 
-| Plugin          | File                                             | Commands the skill uses |
-| --------------- | ------------------------------------------------ | ----------------------- |
-| `batch`         | [`references/batch.md`](references/batch.md)     | `create`, `execute`, `delete` (phases 3–4); `list` for diagnostics |
-| `saucerswap-v1` | [`references/saucerswap-v1.md`](references/saucerswap-v1.md) | `swap` (phase 3e V1), `deposit` (phase 3f V1) |
+| Plugin          | File                                                         | Commands the skill uses                                                                                                                                                                            |
+| --------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `batch`         | [`references/batch.md`](references/batch.md)                 | `create`, `execute`, `delete` (phases 3–4); `list` for diagnostics                                                                                                                                 |
+| `saucerswap-v1` | [`references/saucerswap-v1.md`](references/saucerswap-v1.md) | `swap` (phase 3e V1), `deposit` (phase 3f V1)                                                                                                                                                      |
 | `saucerswap-v2` | [`references/saucerswap-v2.md`](references/saucerswap-v2.md) | `swap` (phase 3e V2), `mint-position` (phase 3f V2); `increase-liquidity`, `decrease-liquidity`, `collect-fees` as standalone pre/post-batch ops; `list-positions` for post-execution verification |
-| `token`         | [`references/token.md`](references/token.md)     | `view` (phase 1), `import` (phase 1), `associate` (phase 2), `allowance-ft` (phase 3a–c), `transfer-ft` (phase 3d) |
-| `account`       | [`references/account.md`](references/account.md) | `balance` (phases 2, 4, 5) |
-| `network`       | [`references/network.md`](references/network.md) | `list` (phase 1), `get-operator` (phase 1) |
+| `token`         | [`references/token.md`](references/token.md)                 | `view` (phase 1), `import` (phase 1), `associate` (phase 2), `allowance-ft` (phase 3a–c), `transfer-ft` (phase 3d)                                                                                 |
+| `account`       | [`references/account.md`](references/account.md)             | `balance` (phases 2, 4, 5)                                                                                                                                                                         |
+| `network`       | [`references/network.md`](references/network.md)             | `list` (phase 1), `get-operator` (phase 1)                                                                                                                                                         |
 
 ## 2. HBAR detection
 
@@ -23,24 +23,24 @@ Input counts as HBAR if `input === "HBAR"` (case-insensitive) or `input === whba
 
 ### V1 router
 
-| Network  | Contract ID    |
-|----------|----------------|
-| Testnet  | `0.0.19264`    |
-| Mainnet  | `0.0.3045981`  |
+| Network | Contract ID   |
+| ------- | ------------- |
+| Testnet | `0.0.19264`   |
+| Mainnet | `0.0.3045981` |
 
 ### V2 SwapRouter (spender for `saucerswap-v2 swap`)
 
-| Network  | Contract ID      |
-|----------|------------------|
-| Testnet  | `0.0.1414040`    |
-| Mainnet  | `0.0.3949434`    |
+| Network | Contract ID   |
+| ------- | ------------- |
+| Testnet | `0.0.1414040` |
+| Mainnet | `0.0.3949434` |
 
 ### V2 NFT Position Manager (spender for `saucerswap-v2 mint-position`)
 
-| Network  | Contract ID      |
-|----------|------------------|
-| Testnet  | `0.0.1308184`    |
-| Mainnet  | `0.0.4053945`    |
+| Network | Contract ID   |
+| ------- | ------------- |
+| Testnet | `0.0.1308184` |
+| Mainnet | `0.0.4053945` |
 
 ## 4. Batch assembly order
 
@@ -97,16 +97,16 @@ Phase-specific additions:
 
 Every error branch appends an `error` audit entry **before** acting. If the batch was created at the time of failure, always run `batch delete` first.
 
-| `code` | Typical phase | Behaviour | Retry |
-|---|---|---|---|
-| `ValidationError` | 1–2 | Abort; surface the offending flag/field | No |
-| `NotFoundError` (account/token) | 1–2 | Abort; check token/account ID | No |
-| `AuthorizationError` | 2–4 | Abort; operator cannot sign — escalate | No |
-| `NetworkError` | any | Exponential backoff `1s → 2s → 4s` | ≤ 3 |
-| `TransactionPrecheckError` — `INSUFFICIENT_PAYER_BALANCE` | 4 | Delete batch, abort, instruct caller to top up | No |
-| `TransactionPrecheckError` — `TOKEN_NOT_ASSOCIATED_TO_ACCOUNT` | 4 | Delete batch, abort (should have been caught in phase 2) | No |
-| `TransactionPrecheckError` — `TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT` | 2 | Skip that associate, continue | No retry needed |
-| `TransactionError` (`recoverable: true`) | 4 | Delete batch if needed, backoff, retry **whole batch** once | 1 |
-| `TransactionError` (`recoverable: false`) | 4 | Delete batch, abort | No |
-| `StateError` | any | Abort; advise caller to inspect `hcli` state | No |
-| Unknown | any | Delete batch if created, dump raw error, abort | No |
+| `code`                                                             | Typical phase | Behaviour                                                   | Retry           |
+| ------------------------------------------------------------------ | ------------- | ----------------------------------------------------------- | --------------- |
+| `ValidationError`                                                  | 1–2           | Abort; surface the offending flag/field                     | No              |
+| `NotFoundError` (account/token)                                    | 1–2           | Abort; check token/account ID                               | No              |
+| `AuthorizationError`                                               | 2–4           | Abort; operator cannot sign — escalate                      | No              |
+| `NetworkError`                                                     | any           | Exponential backoff `1s → 2s → 4s`                          | ≤ 3             |
+| `TransactionPrecheckError` — `INSUFFICIENT_PAYER_BALANCE`          | 4             | Delete batch, abort, instruct caller to top up              | No              |
+| `TransactionPrecheckError` — `TOKEN_NOT_ASSOCIATED_TO_ACCOUNT`     | 4             | Delete batch, abort (should have been caught in phase 2)    | No              |
+| `TransactionPrecheckError` — `TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT` | 2             | Skip that associate, continue                               | No retry needed |
+| `TransactionError` (`recoverable: true`)                           | 4             | Delete batch if needed, backoff, retry **whole batch** once | 1               |
+| `TransactionError` (`recoverable: false`)                          | 4             | Delete batch, abort                                         | No              |
+| `StateError`                                                       | any           | Abort; advise caller to inspect `hcli` state                | No              |
+| Unknown                                                            | any           | Delete batch if created, dump raw error, abort              | No              |

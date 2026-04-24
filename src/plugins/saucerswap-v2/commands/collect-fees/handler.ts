@@ -61,6 +61,7 @@ export class SaucerSwapV2CollectFeesCommand extends BaseTransactionCommand<
       recipientEvmAddress: recipient,
       unwrapHbar: validArgs.unwrapHbar,
       gas: validArgs.gas,
+      keyRefIds: [],
       network,
     };
   }

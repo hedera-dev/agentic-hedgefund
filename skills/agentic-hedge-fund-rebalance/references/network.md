@@ -1,6 +1,6 @@
 # network plugin (rebalance commands)
 
-### `hcli network list` *(used by the skill — phase 1)*
+### `hcli network list` _(used by the skill — phase 1)_
 
 No options required.
 
@@ -10,7 +10,7 @@ No options required.
 
 ---
 
-### `hcli network get-operator` *(used by the skill — phase 1)*
+### `hcli network get-operator` _(used by the skill — phase 1)_
 
 No options required.
 

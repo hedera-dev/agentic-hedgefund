@@ -4,11 +4,11 @@ Only the commands used by this skill are documented here.
 
 ---
 
-### `hcli token view` *(used by the skill — phase 1)*
+### `hcli token view` _(used by the skill — phase 1)_
 
-| Option    | Short | Type   | Required | Description            |
-| --------- | ----- | ------ | -------- | ---------------------- |
-| `--token` | `-T`  | string | **yes**  | Token ID or alias.     |
+| Option    | Short | Type   | Required | Description        |
+| --------- | ----- | ------ | -------- | ------------------ |
+| `--token` | `-T`  | string | **yes**  | Token ID or alias. |
 
 **Output:** `{ tokenId, name, symbol, decimals, type, network, … }`
 
@@ -16,7 +16,7 @@ Only the commands used by this skill are documented here.
 
 ---
 
-### `hcli token import` *(used by the skill — phase 1)*
+### `hcli token import` _(used by the skill — phase 1)_
 
 | Option    | Short | Type   | Required | Description                                      |
 | --------- | ----- | ------ | -------- | ------------------------------------------------ |
@@ -29,13 +29,13 @@ Only the commands used by this skill are documented here.
 
 ---
 
-### `hcli token associate` [batchify] *(used by the skill — phase 2, standalone)*
+### `hcli token associate` [batchify] _(used by the skill — phase 2, standalone)_
 
-| Option          | Short | Type   | Required | Description                     |
-| --------------- | ----- | ------ | -------- | ------------------------------- |
-| `--token`       | `-T`  | string | **yes**  | Token to associate.             |
-| `--account`     | `-a`  | string | **yes**  | Account to associate it to.     |
-| `--key-manager` | `-k`  | string | no       | Key manager.                    |
+| Option          | Short | Type   | Required | Description                 |
+| --------------- | ----- | ------ | -------- | --------------------------- |
+| `--token`       | `-T`  | string | **yes**  | Token to associate.         |
+| `--account`     | `-a`  | string | **yes**  | Account to associate it to. |
+| `--key-manager` | `-k`  | string | no       | Key manager.                |
 
 **Output:** `{ transactionId?, accountId, tokenId, associated, alreadyAssociated?, network }`
 
@@ -43,15 +43,15 @@ Only the commands used by this skill are documented here.
 
 ---
 
-### `hcli token allowance-ft` [batchify] *(used by the skill — phase 3a–c, inside batch)*
+### `hcli token allowance-ft` [batchify] _(used by the skill — phase 3a–c, inside batch)_
 
-| Option          | Short | Type   | Required | Description                                     |
-| --------------- | ----- | ------ | -------- | ----------------------------------------------- |
-| `--token`       | `-T`  | string | **yes**  | Token to approve.                               |
-| `--owner`       | `-o`  | string | **yes**  | Owner account (the operator).                   |
-| `--spender`     | `-s`  | string | **yes**  | Spender: V1 router contract ID.                 |
-| `--amount`      | `-a`  | string | **yes**  | Allowance in display units (or raw with `"t"`). |
-| `--batch`       | `-B`  | string | no       | Batch name — stages inside batch.               |
+| Option      | Short | Type   | Required | Description                                     |
+| ----------- | ----- | ------ | -------- | ----------------------------------------------- |
+| `--token`   | `-T`  | string | **yes**  | Token to approve.                               |
+| `--owner`   | `-o`  | string | **yes**  | Owner account (the operator).                   |
+| `--spender` | `-s`  | string | **yes**  | Spender: V1 router contract ID.                 |
+| `--amount`  | `-a`  | string | **yes**  | Allowance in display units (or raw with `"t"`). |
+| `--batch`   | `-B`  | string | no       | Batch name — stages inside batch.               |
 
 **Output:** `{ tokenId, ownerAccountId, spenderAccountId, amount, transactionId, network }`
 
@@ -59,15 +59,15 @@ Only the commands used by this skill are documented here.
 
 ---
 
-### `hcli token transfer-ft` [batchify] *(used by the skill — phase 3d, inside batch)*
+### `hcli token transfer-ft` [batchify] _(used by the skill — phase 3d, inside batch)_
 
-| Option          | Short | Type   | Required | Description                               |
-| --------------- | ----- | ------ | -------- | ----------------------------------------- |
-| `--token`       | `-T`  | string | **yes**  | Fungible token to transfer.               |
-| `--from`        | `-f`  | string | **yes**  | Source account (treasury).                |
-| `--to`          | `-t`  | string | **yes**  | Destination account (operator).           |
-| `--amount`      | `-a`  | string | **yes**  | Amount in display units or raw with `"t"`.|
-| `--batch`       | `-B`  | string | no       | Batch name — stages inside batch.         |
+| Option     | Short | Type   | Required | Description                                |
+| ---------- | ----- | ------ | -------- | ------------------------------------------ |
+| `--token`  | `-T`  | string | **yes**  | Fungible token to transfer.                |
+| `--from`   | `-f`  | string | **yes**  | Source account (treasury).                 |
+| `--to`     | `-t`  | string | **yes**  | Destination account (operator).            |
+| `--amount` | `-a`  | string | **yes**  | Amount in display units or raw with `"t"`. |
+| `--batch`  | `-B`  | string | no       | Batch name — stages inside batch.          |
 
 **Output:** `{ transactionId, tokenId, from, to, amount, network }`
 

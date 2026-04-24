@@ -6,15 +6,15 @@ HIP-551 atomic batch transactions: group multiple signed transactions and execut
 
 ---
 
-### `hcli batch create` *(used by the skill — phase 3)*
+### `hcli batch create` _(used by the skill — phase 3)_
 
 Create a new named batch and register a signing key for it.
 
-| Option          | Short | Type   | Required | Default        | Description                                            |
-| --------------- | ----- | ------ | -------- | -------------- | ------------------------------------------------------ |
-| `--name`        | `-n`  | string | **yes**  | —              | Local alias for the batch.                             |
-| `--key`         | `-k`  | string | no       | operator       | Key to sign all transactions in the batch.             |
-| `--key-manager` | `-m`  | string | no       | config default | Key manager: `local` or `local_encrypted`.             |
+| Option          | Short | Type   | Required | Default        | Description                                |
+| --------------- | ----- | ------ | -------- | -------------- | ------------------------------------------ |
+| `--name`        | `-n`  | string | **yes**  | —              | Local alias for the batch.                 |
+| `--key`         | `-k`  | string | no       | operator       | Key to sign all transactions in the batch. |
+| `--key-manager` | `-m`  | string | no       | config default | Key manager: `local` or `local_encrypted`. |
 
 **Example:**
 
@@ -28,13 +28,13 @@ hcli batch create --name rebalance-20260424-101530 --key fund-operator --format 
 
 ---
 
-### `hcli batch execute` *(used by the skill — phase 4)*
+### `hcli batch execute` _(used by the skill — phase 4)_
 
 Sign and submit all transactions in a named batch as a single `BatchTransaction`.
 
-| Option   | Short | Type   | Required | Default | Description         |
-| -------- | ----- | ------ | -------- | ------- | ------------------- |
-| `--name` | `-n`  | string | **yes**  | —       | Batch to execute.   |
+| Option   | Short | Type   | Required | Default | Description       |
+| -------- | ----- | ------ | -------- | ------- | ----------------- |
+| `--name` | `-n`  | string | **yes**  | —       | Batch to execute. |
 
 **Example:**
 
@@ -50,14 +50,14 @@ hcli batch execute --name rebalance-20260424-101530 --format json
 
 ---
 
-### `hcli batch delete` *(used by the skill — on failure)*
+### `hcli batch delete` _(used by the skill — on failure)_
 
 Remove a batch and all its staged transactions from local state.
 
-| Option    | Short | Type   | Required | Default | Description                                                        |
-| --------- | ----- | ------ | -------- | ------- | ------------------------------------------------------------------ |
-| `--name`  | `-n`  | string | **yes**  | —       | Batch to delete.                                                   |
-| `--order` | `-o`  | number | no       | —       | If provided, removes only the transaction at that position.        |
+| Option    | Short | Type   | Required | Default | Description                                                 |
+| --------- | ----- | ------ | -------- | ------- | ----------------------------------------------------------- |
+| `--name`  | `-n`  | string | **yes**  | —       | Batch to delete.                                            |
+| `--order` | `-o`  | number | no       | —       | If provided, removes only the transaction at that position. |
 
 **Example:**
 
@@ -71,7 +71,7 @@ hcli batch delete --name rebalance-20260424-101530 --format json
 
 ---
 
-### `hcli batch list` *(diagnostic)*
+### `hcli batch list` _(diagnostic)_
 
 List all batches currently held in local state.
 
