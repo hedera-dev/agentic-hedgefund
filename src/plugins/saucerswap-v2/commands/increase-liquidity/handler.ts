@@ -18,6 +18,7 @@ import {
 } from '@hashgraph/sdk';
 import {
   BaseTransactionCommand,
+  EntityReferenceType,
   HBAR_DECIMALS,
   TransactionError,
   ValidationError,
@@ -37,6 +38,8 @@ import {
 } from '@/shared/util/token-balance-input';
 
 import { SaucerSwapV2IncreaseLiquidityInputSchema } from './input';
+import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 export const SAUCERSWAP_V2_INCREASE_LIQUIDITY_COMMAND_NAME =
   'saucerswap-v2_increase-liquidity';
@@ -47,8 +50,11 @@ export class SaucerSwapV2IncreaseLiquidityCommand extends BaseTransactionCommand
   SaucerSwapV2IncreaseLiquiditySignResult,
   SaucerSwapV2IncreaseLiquidityExecuteResult
 > {
-  constructor() {
+  private readonly saucerSwapHelper: SaucerSwapHelperService;
+
+  constructor(saucerSwapHelper: SaucerSwapHelperService) {
     super(SAUCERSWAP_V2_INCREASE_LIQUIDITY_COMMAND_NAME);
+    this.saucerSwapHelper = saucerSwapHelper;
   }
 
   async normalizeParams(
@@ -87,18 +93,28 @@ export class SaucerSwapV2IncreaseLiquidityCommand extends BaseTransactionCommand
     }
 
     const [t0, t1] = await Promise.all([
-      api.mirror.getTokenInfo(token0Evm),
-      api.mirror.getTokenInfo(token1Evm),
+      this.saucerSwapHelper.resolveToken({
+        value: token0Evm,
+        type: EntityReferenceType.EVM_ADDRESS,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
+      this.saucerSwapHelper.resolveToken({
+        value: token1Evm,
+        type: EntityReferenceType.EVM_ADDRESS,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
     ]);
 
     let d0 = 0;
     if (!isRawUnits(validArgs.amountA)) {
-      d0 = parseInt(t0.decimals) || 0;
+      d0 = parseInt(t0.tokenInfo.decimals) || 0;
     }
     const amount0Desired = processTokenBalanceInput(validArgs.amountA, d0);
     let d1 = 0;
     if (!isRawUnits(validArgs.amountB)) {
-      d1 = parseInt(t1.decimals) || 0;
+      d1 = parseInt(t1.tokenInfo.decimals) || 0;
     }
     const amount1Desired = processTokenBalanceInput(validArgs.amountB, d1);
 
@@ -218,5 +234,11 @@ export class SaucerSwapV2IncreaseLiquidityCommand extends BaseTransactionCommand
 export async function saucerswapV2IncreaseLiquidity(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  return new SaucerSwapV2IncreaseLiquidityCommand().execute(args);
+  return new SaucerSwapV2IncreaseLiquidityCommand(
+    new SaucerSwapHelperServiceImpl(
+      args.api.mirror,
+      args.api.network,
+      args.api.identityResolution,
+    ),
+  ).execute(args);
 }

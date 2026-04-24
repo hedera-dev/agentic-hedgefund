@@ -1,7 +1,6 @@
-import type {
+import type { CommandHandlerArgs, CommandResult } from '@hiero-ledger/hiero-cli';
+import {
   BaseTransactionCommand,
-  CommandHandlerArgs,
-  CommandResult,
   TransactionError,
   ValidationError,
 } from '@hiero-ledger/hiero-cli';
@@ -151,6 +150,10 @@ export class SaucerSwapV2DecreaseLiquidityCommand extends BaseTransactionCommand
       ],
     );
 
+    // collect() is always bundled with decreaseLiquidity() because decreaseLiquidity
+    // only unlocks tokens internally — a separate collect() call is required to move
+    // them to the recipient. MAX_UINT128 sweeps both the newly unlocked amounts AND
+    // any previously accrued fees in the same transaction.
     const collectEncoded = encodeContractCall(
       NFT_POSITION_MANAGER_ABI,
       'collect',

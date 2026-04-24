@@ -38,7 +38,7 @@ export class SaucerSwapV2ListPositionsCommand implements Command {
       accountId,
       positionCount: positions.length,
       positions: positions.map((p) => ({
-        tokenSN: Number(p.tokenSN),
+        tokenSN: p.tokenSN,
         feeTier: p.fee ?? null,
         tickLower: p.tickLower ?? null,
         tickUpper: p.tickUpper ?? null,

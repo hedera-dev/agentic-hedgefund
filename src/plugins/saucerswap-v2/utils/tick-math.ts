@@ -1,3 +1,6 @@
+// Uniswap V3 defines price at tick i as 1.0001^i, so one tick = 0.01% price move.
+const TICK_BASE_LOG = Math.log(1.0001);
+
 /**
  * Compute ticks for a symmetric ±percentage range around the current tick.
  */
@@ -7,7 +10,7 @@ export function tickRangeFromPercent(
   tickSpacing: number,
 ): { tickLower: number; tickUpper: number } {
   const tickDelta = Math.floor(
-    Math.log(1 + percentDelta / 100) / Math.log(1.0001),
+    Math.log(1 + percentDelta / 100) / TICK_BASE_LOG,
   );
   return {
     tickLower:
