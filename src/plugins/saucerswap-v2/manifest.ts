@@ -403,7 +403,7 @@ export const saucerswapV2PluginManifest: PluginManifest = {
           short: 'l',
           type: OptionType.STRING,
           required: true,
-          description: 'Liquidity amount or "all"',
+          description: 'Liquidity amount',
         },
         {
           name: 'unwrap-hbar',
