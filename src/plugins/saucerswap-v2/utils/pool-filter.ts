@@ -1,4 +1,7 @@
-import type { SaucerSwapV2ApiPool, SaucerSwapV2ApiToken } from '@/shared/schemas/schemas';
+import type {
+  SaucerSwapV2ApiPool,
+  SaucerSwapV2ApiToken,
+} from '@/shared/schemas/schemas';
 
 export function matchesPoolFilter(
   pool: SaucerSwapV2ApiPool,

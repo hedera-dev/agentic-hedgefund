@@ -589,8 +589,7 @@ export const saucerswapV2PluginManifest: PluginManifest = {
           short: 'a',
           type: OptionType.STRING,
           required: true,
-          description:
-            'Account ID, EVM address, or alias',
+          description: 'Account ID, EVM address, or alias',
         },
       ],
       handler: saucerswapV2ListPositions,

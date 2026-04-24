@@ -9,7 +9,10 @@ import type { SaucerSwapV2ViewPoolOutput } from './output';
 import { Interface } from 'ethers';
 
 import { FACTORY_ABI } from '@/plugins/saucerswap-v2/abi/factory';
-import { EVM_0_ADDRESS, getSaucerSwapV2Config } from '@/plugins/saucerswap-v2/constants';
+import {
+  EVM_0_ADDRESS,
+  getSaucerSwapV2Config,
+} from '@/plugins/saucerswap-v2/constants';
 import { matchesApiPool } from '@/plugins/saucerswap-v2/utils/pool-filter';
 import { SaucerSwapApiServiceImpl } from '@/shared/services/saucerswap-api/saucerswap-api-service';
 import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
@@ -69,7 +72,12 @@ export class SaucerSwapV2ViewPoolCommand implements Command {
     const apiPool = pools.find(
       (p) =>
         Number(p.fee) === validArgs.feeTier &&
-        matchesApiPool(p.tokenA, p.tokenB, tokenAResolved.tokenInfo.token_id, tokenBResolved.tokenInfo.token_id),
+        matchesApiPool(
+          p.tokenA,
+          p.tokenB,
+          tokenAResolved.tokenInfo.token_id,
+          tokenBResolved.tokenInfo.token_id,
+        ),
     );
 
     const outputData: SaucerSwapV2ViewPoolOutput = {
@@ -89,7 +97,6 @@ export class SaucerSwapV2ViewPoolCommand implements Command {
     return { result: outputData };
   }
 }
-
 
 export async function saucerswapV2ViewPool(
   args: CommandHandlerArgs,

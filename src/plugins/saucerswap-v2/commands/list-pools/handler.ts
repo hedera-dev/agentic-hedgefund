@@ -27,7 +27,10 @@ export class SaucerSwapV2ListPoolsCommand implements Command {
     );
 
     const filtered = pools.filter((p) =>
-      matchesPoolFilter(p, { feeTier: validArgs.feeTier, token: validArgs.token }),
+      matchesPoolFilter(p, {
+        feeTier: validArgs.feeTier,
+        token: validArgs.token,
+      }),
     );
 
     const outputData: SaucerSwapV2ListPoolsOutput = {

@@ -23,10 +23,10 @@ export class SaucerSwapV2ListPositionsCommand implements Command {
     const config = getSaucerSwapV2Config(network);
 
     const account = await api.identityResolution.resolveAccount({
-          accountReference: validArgs.account.value,
-          type: validArgs.account.type,
-          network,
-        });
+      accountReference: validArgs.account.value,
+      type: validArgs.account.type,
+      network,
+    });
     const accountId = account.accountId;
 
     const positions = await this.saucerSwapApi.fetchV2Positions(
