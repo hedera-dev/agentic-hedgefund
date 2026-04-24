@@ -1,7 +1,3 @@
-export function nearestUsableTick(tick: number, tickSpacing: number): number {
-  return Math.round(tick / tickSpacing) * tickSpacing;
-}
-
 /**
  * Compute ticks for a symmetric ±percentage range around the current tick.
  */
@@ -14,7 +10,8 @@ export function tickRangeFromPercent(
     Math.log(1 + percentDelta / 100) / Math.log(1.0001),
   );
   return {
-    tickLower: nearestUsableTick(currentTick - tickDelta, tickSpacing),
-    tickUpper: nearestUsableTick(currentTick + tickDelta, tickSpacing),
+    tickLower:
+      Math.floor((currentTick - tickDelta) / tickSpacing) * tickSpacing,
+    tickUpper: Math.ceil((currentTick + tickDelta) / tickSpacing) * tickSpacing,
   };
 }
