@@ -1,4 +1,11 @@
-import { CommandHandlerArgs, CommandResult } from '@hiero-ledger/hiero-cli';
+import type {
+  BaseTransactionCommand,
+  CommandHandlerArgs,
+  CommandResult,
+  TransactionError,
+  ValidationError,
+} from '@hiero-ledger/hiero-cli';
+import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import type { SaucerSwapV2DecreaseLiquidityOutput } from './output';
 import type {
   SaucerSwapV2DecreaseLiquidityBuildResult,
@@ -8,11 +15,6 @@ import type {
 } from './types';
 
 import { ContractExecuteTransaction, ContractId } from '@hashgraph/sdk';
-import {
-  BaseTransactionCommand,
-  TransactionError,
-  ValidationError,
-} from '@hiero-ledger/hiero-cli';
 import { Interface } from 'ethers';
 
 import { FACTORY_ABI } from '@/plugins/saucerswap-v2/abi/factory';
@@ -26,12 +28,11 @@ import {
 import { encodeContractCall } from '@/plugins/saucerswap-v2/utils/abi-encoder';
 import { encodeMulticall } from '@/plugins/saucerswap-v2/utils/multicall';
 import { getAmountsForLiquidity } from '@/plugins/saucerswap-v2/utils/tick-math';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 import { computeDeadline } from '@/shared/util/deadline';
 import { computeMinOutput } from '@/shared/util/slippage';
 
 import { SaucerSwapV2DecreaseLiquidityInputSchema } from './input';
-import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
-import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 export const SAUCERSWAP_V2_DECREASE_LIQUIDITY_COMMAND_NAME =
   'saucerswap-v2_decrease-liquidity';

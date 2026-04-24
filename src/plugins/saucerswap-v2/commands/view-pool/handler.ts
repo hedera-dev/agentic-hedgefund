@@ -4,6 +4,7 @@ import type {
   CommandResult,
 } from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapApiService } from '@/shared/services/saucerswap-api/saucerswap-api-service.interface';
+import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import type { SaucerSwapV2ViewPoolOutput } from './output';
 
 import { Interface } from 'ethers';
@@ -15,11 +16,10 @@ import {
 } from '@/plugins/saucerswap-v2/constants';
 import { matchesApiPool } from '@/plugins/saucerswap-v2/utils/pool-filter';
 import { SaucerSwapApiServiceImpl } from '@/shared/services/saucerswap-api/saucerswap-api-service';
-import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
+import { tokenEvmAddress } from '@/shared/util/token-evm';
 
 import { SaucerSwapV2ViewPoolInputSchema } from './input';
-import { tokenEvmAddress } from '@/shared/util/token-evm';
 
 export class SaucerSwapV2ViewPoolCommand implements Command {
   constructor(

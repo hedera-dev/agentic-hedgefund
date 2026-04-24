@@ -1,4 +1,10 @@
-import { CommandHandlerArgs, CommandResult } from '@hiero-ledger/hiero-cli';
+import type {
+  BaseTransactionCommand,
+  CommandHandlerArgs,
+  CommandResult,
+  TransactionError,
+} from '@hiero-ledger/hiero-cli';
+import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import type { SaucerSwapV2SwapOutput } from './output';
 import type {
   SaucerSwapV2SwapBuildResult,
@@ -7,27 +13,21 @@ import type {
   SaucerSwapV2SwapSignResult,
 } from './types';
 
-import {
-  BaseTransactionCommand,
-  TransactionError,
-} from '@hiero-ledger/hiero-cli';
-
 import { SWAP_ROUTER_ABI } from '@/plugins/saucerswap-v2/abi/swap-router';
 import { getSaucerSwapV2Config } from '@/plugins/saucerswap-v2/constants';
 import { encodeContractCall } from '@/plugins/saucerswap-v2/utils/abi-encoder';
 import { encodeMulticall } from '@/plugins/saucerswap-v2/utils/multicall';
 import { encodePath } from '@/plugins/saucerswap-v2/utils/path-encoder';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 import { computeDeadline } from '@/shared/util/deadline';
 import { computeMinOutput } from '@/shared/util/slippage';
 import {
   isRawUnits,
   processTokenBalanceInput,
 } from '@/shared/util/token-balance-input';
+import { tokenEvmAddress } from '@/shared/util/token-evm';
 
 import { SaucerSwapV2SwapInputSchema } from './input';
-import { tokenEvmAddress } from '@/shared/util/token-evm';
-import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
-import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 export const SAUCERSWAP_V2_SWAP_COMMAND_NAME = 'saucerswap-v2_swap';
 

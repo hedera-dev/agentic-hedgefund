@@ -1,4 +1,10 @@
-import { CommandHandlerArgs, CommandResult } from '@hiero-ledger/hiero-cli';
+import type {
+  BaseTransactionCommand,
+  CommandHandlerArgs,
+  CommandResult,
+  TransactionError,
+} from '@hiero-ledger/hiero-cli';
+import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import type { SaucerSwapV2CollectFeesOutput } from './output';
 import type {
   SaucerSwapV2CollectFeesBuildResult,
@@ -8,10 +14,6 @@ import type {
 } from './types';
 
 import { ContractExecuteTransaction, ContractId } from '@hashgraph/sdk';
-import {
-  BaseTransactionCommand,
-  TransactionError,
-} from '@hiero-ledger/hiero-cli';
 
 import { NFT_POSITION_MANAGER_ABI } from '@/plugins/saucerswap-v2/abi/nft-position-manager';
 import {
@@ -20,10 +22,9 @@ import {
 } from '@/plugins/saucerswap-v2/constants';
 import { encodeContractCall } from '@/plugins/saucerswap-v2/utils/abi-encoder';
 import { encodeMulticall } from '@/plugins/saucerswap-v2/utils/multicall';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 import { SaucerSwapV2CollectFeesInputSchema } from './input';
-import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
-import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 export const SAUCERSWAP_V2_COLLECT_FEES_COMMAND_NAME =
   'saucerswap-v2_collect-fees';

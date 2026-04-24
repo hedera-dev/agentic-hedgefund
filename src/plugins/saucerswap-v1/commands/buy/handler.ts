@@ -3,6 +3,7 @@ import type {
   CommandResult,
   ContractTransactionService,
 } from '@hiero-ledger/hiero-cli';
+import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import type { SaucerSwapV1BuyOutput } from './output';
 import type {
   SaucerSwapV1BuyBuildTransactionResult,
@@ -18,10 +19,11 @@ import {
   ValidationError,
 } from '@hiero-ledger/hiero-cli';
 
-import { SwapDirection } from '@/shared/types/shared.types';
 import { getSaucerSwapV1Config } from '@/plugins/saucerswap-v1/constants';
 import { SaucerSwapV1ContractResolver } from '@/plugins/saucerswap-v1/saucerswap-contract-resolver';
 import { resolveSwapDirection } from '@/plugins/saucerswap-v1/utils/resolve-swap-direction';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
+import { SwapDirection } from '@/shared/types/shared.types';
 import { toBigNumber } from '@/shared/util/bignum';
 import { computeDeadline } from '@/shared/util/deadline';
 import { isHbar } from '@/shared/util/hbar-detection';
@@ -30,8 +32,6 @@ import {
   processTokenBalanceInput,
 } from '@/shared/util/token-balance-input';
 import { tokenEvmAddress } from '@/shared/util/token-evm';
-import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
-import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 import { SaucerSwapV1BuyInputSchema } from './input';
 

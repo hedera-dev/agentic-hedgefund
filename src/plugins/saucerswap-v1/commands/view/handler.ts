@@ -1,15 +1,16 @@
-import {
+import type {
   Command,
   CommandHandlerArgs,
   CommandResult,
-  NotFoundError,
 } from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapApiService } from '@/shared/services/saucerswap-api/saucerswap-api-service.interface';
+import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import type { SaucerSwapV1ViewOutput } from './output';
+
+import { NotFoundError } from '@hiero-ledger/hiero-cli';
 
 import { getSaucerSwapV1Config } from '@/plugins/saucerswap-v1/constants';
 import { SaucerSwapApiServiceImpl } from '@/shared/services/saucerswap-api/saucerswap-api-service';
-import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 import { SaucerSwapV1ViewInputSchema } from './input';

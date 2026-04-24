@@ -6,8 +6,6 @@ import type {
 import type { SaucerSwapApiService } from '@/shared/services/saucerswap-api/saucerswap-api-service.interface';
 import type { SaucerSwapV2ListPositionsOutput } from './output';
 
-import { AliasType } from '@hiero-ledger/hiero-cli';
-
 import { getSaucerSwapV2Config } from '@/plugins/saucerswap-v2/constants';
 import { SaucerSwapApiServiceImpl } from '@/shared/services/saucerswap-api/saucerswap-api-service';
 

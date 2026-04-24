@@ -2,6 +2,7 @@ import type {
   CommandHandlerArgs,
   CommandResult,
 } from '@hiero-ledger/hiero-cli';
+import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import type { SaucerSwapV2MintPositionOutput } from './output';
 import type {
   SaucerSwapV2MintPositionBuildResult,
@@ -28,25 +29,25 @@ import { FACTORY_ABI } from '@/plugins/saucerswap-v2/abi/factory';
 import { NFT_POSITION_MANAGER_ABI } from '@/plugins/saucerswap-v2/abi/nft-position-manager';
 import { POOL_ABI } from '@/plugins/saucerswap-v2/abi/pool';
 import {
+  EVM_0_ADDRESS,
   FEE_TIER_TO_TICK_SPACING,
   getSaucerSwapV2Config,
 } from '@/plugins/saucerswap-v2/constants';
 import { encodeContractCall } from '@/plugins/saucerswap-v2/utils/abi-encoder';
 import { encodeMulticall } from '@/plugins/saucerswap-v2/utils/multicall';
 import { tickRangeFromPercent } from '@/plugins/saucerswap-v2/utils/tick-math';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 import { toBigNumber } from '@/shared/util/bignum';
 import { computeDeadline } from '@/shared/util/deadline';
 import { isHbar } from '@/shared/util/hbar-detection';
 import { computeMinOutput } from '@/shared/util/slippage';
-import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
-import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 import {
   isRawUnits,
   processTokenBalanceInput,
 } from '@/shared/util/token-balance-input';
+import { tokenEvmAddress } from '@/shared/util/token-evm';
 
 import { SaucerSwapV2MintPositionInputSchema } from './input';
-import { tokenEvmAddress } from '@/shared/util/token-evm';
 
 export const SAUCERSWAP_V2_MINT_POSITION_COMMAND_NAME =
   'saucerswap-v2_mint-position';
@@ -127,10 +128,7 @@ export class SaucerSwapV2MintPositionCommand extends BaseTransactionCommand<
     });
 
     const poolAddress = getPoolResult.queryResult[0] as string | undefined;
-    if (
-      !poolAddress ||
-      poolAddress === '0x0000000000000000000000000000000000000000'
-    ) {
+    if (!poolAddress || poolAddress === EVM_0_ADDRESS) {
       throw new NotFoundError(
         `Pool not found for tokens ${token0Evm} / ${token1Evm} @ fee tier ${validArgs.feeTier}`,
         { context: { token0Evm, token1Evm, feeTier: validArgs.feeTier } },

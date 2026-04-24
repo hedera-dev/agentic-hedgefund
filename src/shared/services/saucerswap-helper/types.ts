@@ -1,5 +1,8 @@
-import { EntityReferenceType, SupportedNetwork } from '@hiero-ledger/hiero-cli';
-import { TokenInfo } from '@hiero-ledger/hiero-cli/dist/core/services/mirrornode/types';
+import type {
+  EntityReferenceType,
+  SupportedNetwork,
+} from '@hiero-ledger/hiero-cli';
+import type { TokenInfo } from '@hiero-ledger/hiero-cli/dist/core/services/mirrornode/types';
 
 export interface TokenParams {
   value: string;

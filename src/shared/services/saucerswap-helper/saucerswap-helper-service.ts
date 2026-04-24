@@ -1,17 +1,18 @@
-import {
-  AliasType,
+import type {
   HederaMirrornodeService,
   IdentityResolutionService,
   NetworkService,
-  ValidationError,
 } from '@hiero-ledger/hiero-cli';
-import { isHbar } from '@/shared/util/hbar-detection';
-import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
-import {
+import type { AccountResponse } from '@hiero-ledger/hiero-cli/dist/core/services/mirrornode/types';
+import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
+import type {
   TokenInfoResult,
   TokenParams,
 } from '@/shared/services/saucerswap-helper/types';
-import { AccountResponse } from '@hiero-ledger/hiero-cli/dist/core/services/mirrornode/types';
+
+import { AliasType, ValidationError } from '@hiero-ledger/hiero-cli';
+
+import { isHbar } from '@/shared/util/hbar-detection';
 
 export class SaucerSwapHelperServiceImpl implements SaucerSwapHelperService {
   constructor(

@@ -3,6 +3,7 @@ import type {
   CommandResult,
   ContractTransactionService,
 } from '@hiero-ledger/hiero-cli';
+import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import type { SaucerSwapV1DepositOutput } from './output';
 import type {
   SaucerSwapV1DepositBuildTransactionResult,
@@ -21,6 +22,7 @@ import {
 } from '@hiero-ledger/hiero-cli';
 
 import { getSaucerSwapV1Config } from '@/plugins/saucerswap-v1/constants';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 import { toBigNumber } from '@/shared/util/bignum';
 import { computeDeadline } from '@/shared/util/deadline';
 import { computeMinOutput } from '@/shared/util/slippage';
@@ -29,8 +31,6 @@ import {
   processTokenBalanceInput,
 } from '@/shared/util/token-balance-input';
 import { tokenEvmAddress } from '@/shared/util/token-evm';
-import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
-import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 import { SaucerSwapV1DepositInputSchema } from './input';
 
