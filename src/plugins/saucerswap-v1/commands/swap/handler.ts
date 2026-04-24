@@ -3,6 +3,7 @@ import type {
   CommandResult,
   ContractTransactionService,
 } from '@hiero-ledger/hiero-cli';
+import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import type { SaucerSwapV1SwapOutput } from './output';
 import type {
   SaucerSwapV1SwapBuildTransactionResult,
@@ -13,15 +14,16 @@ import type {
 
 import { ContractFunctionParameters } from '@hashgraph/sdk';
 import {
-  AliasType,
   BaseTransactionCommand,
   TransactionError,
   ValidationError,
 } from '@hiero-ledger/hiero-cli';
 
 import { getSaucerSwapV1Config } from '@/plugins/saucerswap-v1/constants';
-import { SaucerSwapV1Helper } from '@/plugins/saucerswap-v1/saucerswap-helper';
+import { SaucerSwapV1ContractResolver } from '@/plugins/saucerswap-v1/saucerswap-contract-resolver';
 import { resolveSwapDirection } from '@/plugins/saucerswap-v1/utils/resolve-swap-direction';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
+import { SwapDirection } from '@/shared/types/shared.types';
 import { toBigNumber } from '@/shared/util/bignum';
 import { computeDeadline } from '@/shared/util/deadline';
 import { isHbar } from '@/shared/util/hbar-detection';
@@ -32,7 +34,6 @@ import {
 import { tokenEvmAddress } from '@/shared/util/token-evm';
 
 import { SaucerSwapV1SwapInputSchema } from './input';
-import { SwapDirection } from '@/shared/types/shared.types';
 
 export const SAUCERSWAP_V1_SWAP_COMMAND_NAME = 'saucerswap-v1_swap';
 
@@ -42,9 +43,14 @@ export class SaucerSwapV1SwapCommand extends BaseTransactionCommand<
   SaucerSwapV1SwapSignTransactionResult,
   SaucerSwapV1SwapExecuteTransactionResult
 > {
-  private readonly saucerSwapHelper: SaucerSwapV1Helper;
-  constructor(saucerSwapHelper: SaucerSwapV1Helper) {
+  private readonly saucerSwapV1ContractResolver: SaucerSwapV1ContractResolver;
+  private readonly saucerSwapHelper: SaucerSwapHelperService;
+  constructor(
+    saucerSwapContractResolver: SaucerSwapV1ContractResolver,
+    saucerSwapHelper: SaucerSwapHelperService,
+  ) {
     super(SAUCERSWAP_V1_SWAP_COMMAND_NAME);
+    this.saucerSwapV1ContractResolver = saucerSwapContractResolver;
     this.saucerSwapHelper = saucerSwapHelper;
   }
 
@@ -69,36 +75,28 @@ export class SaucerSwapV1SwapCommand extends BaseTransactionCommand<
       config.whbarTokenId,
     );
 
-    const fromTokenId = isHbar(validArgs.from.value, config.whbarTokenId)
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.from.value,
-          referenceType: validArgs.from.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-    const fromTokenInfo = await api.mirror.getTokenInfo(fromTokenId);
-    const toTokenId = isHbar(validArgs.to.value, config.whbarTokenId)
-      ? config.whbarTokenId
-      : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-          entityReference: validArgs.to.value,
-          referenceType: validArgs.to.type,
-          network,
-          aliasType: AliasType.Token,
-        }).entityIdOrEvmAddress;
-    const toTokenInfo = await api.mirror.getTokenInfo(toTokenId);
+    const [fromToken, toToken] = await Promise.all([
+      this.saucerSwapHelper.resolveToken({
+        value: validArgs.from.value,
+        type: validArgs.from.type,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
+      this.saucerSwapHelper.resolveToken({
+        value: validArgs.to.value,
+        type: validArgs.to.type,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
+    ]);
+    const fromTokenInfo = fromToken.tokenInfo;
+    const toTokenInfo = toToken.tokenInfo;
 
     const fromEvm = tokenEvmAddress(fromTokenInfo.token_id);
     const toEvm = tokenEvmAddress(toTokenInfo.token_id);
 
-    const operator = api.network.getCurrentOperatorOrThrow();
-    const operatorMirrorInfo = await api.mirror.getAccount(operator.accountId);
-    if (!operatorMirrorInfo || !operatorMirrorInfo.evmAddress) {
-      throw new ValidationError(
-        `Couldn't resolve operator account to evm address`,
-      );
-    }
-    const recipient = operatorMirrorInfo.evmAddress;
+    const recipientAccount = await this.saucerSwapHelper.resolveRecipient();
+    const recipient = recipientAccount.evmAddress!;
 
     let tokenFromDecimals = 0;
     if (!isRawUnits(validArgs.amount)) {
@@ -119,12 +117,13 @@ export class SaucerSwapV1SwapCommand extends BaseTransactionCommand<
         tokenOutDecimals,
       );
     } else {
-      amountOutMin = await this.saucerSwapHelper.computeAmountOutMin(
-        config.routerContractId,
-        rawAmountIn,
-        [fromEvm, toEvm],
-        validArgs.slippage,
-      );
+      amountOutMin =
+        await this.saucerSwapV1ContractResolver.computeAmountOutMin(
+          config.routerContractId,
+          rawAmountIn,
+          [fromEvm, toEvm],
+          validArgs.slippage,
+        );
     }
 
     return {
@@ -269,6 +268,11 @@ export async function saucerswapV1Swap(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
   return new SaucerSwapV1SwapCommand(
-    new SaucerSwapV1Helper(args.api.contractQuery, args.api.contract),
+    new SaucerSwapV1ContractResolver(args.api.contractQuery, args.api.contract),
+    new SaucerSwapHelperServiceImpl(
+      args.api.mirror,
+      args.api.network,
+      args.api.identityResolution,
+    ),
   ).execute(args);
 }

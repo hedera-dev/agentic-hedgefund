@@ -4,7 +4,7 @@ import type {
   TransactionResult,
 } from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapNetworkConfig } from '@/plugins/saucerswap-v1/constants';
-import { SwapDirection } from '@/shared/types/shared.types';
+import type { SwapDirection } from '@/shared/types/shared.types';
 
 export interface SaucerSwapV1SwapNormalizedParams {
   config: SaucerSwapNetworkConfig;

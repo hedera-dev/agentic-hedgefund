@@ -8,7 +8,7 @@ import { ROUTER_ABI } from '@/plugins/saucerswap-v1/abi/router';
 import { assertAmountsArray } from '@/shared/util/contract-query-result';
 import { computeMaxInput, computeMinOutput } from '@/shared/util/slippage';
 
-export class SaucerSwapV1Helper {
+export class SaucerSwapV1ContractResolver {
   private readonly routerAbi = new Interface(ROUTER_ABI);
 
   constructor(

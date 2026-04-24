@@ -1,12 +1,12 @@
-### ADR-014: SaucerSwap V2 Concentrated Liquidity Plugin
+### ADR-002: SaucerSwap V2 Concentrated Liquidity Plugin
 
 - Status: Proposed
 - Date: 2026-04-09
-- Related: `src/plugins/saucerswap-v2/*`, `src/core/services/contract-transaction/*`, `src/core/services/contract-query/*`, `src/core/services/identity-resolution/*`, `docs/adr/ADR-001-plugin-architecture.md`, `docs/adr/ADR-008-smart-contract-plugin-implementation-strategy.md`, `docs/adr/ADR-009-class-based-handler-and-hook-architecture.md`, `docs/adr/ADR-013-saucerswap-v1-dex-plugin.md`
+- Related: `src/plugins/saucerswap-v2/*`, `src/shared/services/saucerswap-api/*`, `src/shared/schemas/schemas.ts`, `src/shared/util/*`, `docs/adr/ADR-001-saucerswap-v1-dex-plugin.md`
 
 ## Context
 
-ADR-013 introduced a `saucerswap-v1` plugin for SaucerSwap **V1** — a Uniswap V2-style constant-product AMM with uniform liquidity, fungible LP tokens, and named Solidity functions (`addLiquidity`, `swapExactTokensForTokens`, etc.) callable via the Hedera SDK's `ContractFunctionParameters`.
+[ADR-001](ADR-001-saucerswap-v1-dex-plugin.md) introduced a `saucerswap-v1` plugin for SaucerSwap **V1** — a Uniswap V2-style constant-product AMM with uniform liquidity, fungible LP tokens, and named Solidity functions (`addLiquidity`, `swapExactTokensForTokens`, etc.) callable via the Hedera SDK's `ContractFunctionParameters`.
 
 [SaucerSwap V2](https://docs.saucerswap.finance/protocol/saucerswap-v2) is a fundamentally different protocol based on the **Uniswap V3 concentrated-liquidity** model, adapted for the Hedera Token Service (HTS). It introduces:
 
@@ -44,78 +44,80 @@ src/plugins/saucerswap-v2/
 ├── manifest.ts
 ├── constants.ts
 ├── abi/
-│   ├── swap-router.json
-│   ├── nft-position-manager.json
-│   └── factory.json
+│   ├── swap-router.ts
+│   ├── nft-position-manager.ts
+│   ├── factory.ts
+│   └── pool.ts
 ├── utils/
 │   ├── abi-encoder.ts
 │   ├── path-encoder.ts
 │   ├── multicall.ts
-│   ├── tick-math.ts
-│   ├── hbar-detection.ts
-│   ├── slippage.ts
-│   └── deadline.ts
-├── commands/
-│   ├── swap/
-│   │   ├── handler.ts
-│   │   ├── index.ts
-│   │   ├── input.ts
-│   │   ├── output.ts
-│   │   └── types.ts
-│   ├── buy/
-│   │   ├── handler.ts
-│   │   ├── index.ts
-│   │   ├── input.ts
-│   │   ├── output.ts
-│   │   └── types.ts
-│   ├── mint-position/
-│   │   ├── handler.ts
-│   │   ├── index.ts
-│   │   ├── input.ts
-│   │   ├── output.ts
-│   │   └── types.ts
-│   ├── increase-liquidity/
-│   │   ├── handler.ts
-│   │   ├── index.ts
-│   │   ├── input.ts
-│   │   ├── output.ts
-│   │   └── types.ts
-│   ├── decrease-liquidity/
-│   │   ├── handler.ts
-│   │   ├── index.ts
-│   │   ├── input.ts
-│   │   ├── output.ts
-│   │   └── types.ts
-│   ├── collect-fees/
-│   │   ├── handler.ts
-│   │   ├── index.ts
-│   │   ├── input.ts
-│   │   ├── output.ts
-│   │   └── types.ts
-│   ├── list-pools/
-│   │   ├── handler.ts
-│   │   ├── index.ts
-│   │   └── output.ts
-│   ├── view-pool/
-│   │   ├── handler.ts
-│   │   ├── index.ts
-│   │   ├── input.ts
-│   │   └── output.ts
-│   └── list-positions/
-│       ├── handler.ts
-│       ├── index.ts
-│       ├── input.ts
-│       └── output.ts
-└── __tests__/
-    └── unit/
+│   └── tick-math.ts
+└── commands/
+    ├── swap/
+    │   ├── handler.ts
+    │   ├── index.ts
+    │   ├── input.ts
+    │   ├── output.ts
+    │   └── types.ts
+    ├── buy/
+    │   ├── handler.ts
+    │   ├── index.ts
+    │   ├── input.ts
+    │   ├── output.ts
+    │   └── types.ts
+    ├── mint-position/
+    │   ├── handler.ts
+    │   ├── index.ts
+    │   ├── input.ts
+    │   ├── output.ts
+    │   └── types.ts
+    ├── increase-liquidity/
+    │   ├── handler.ts
+    │   ├── index.ts
+    │   ├── input.ts
+    │   ├── output.ts
+    │   └── types.ts
+    ├── decrease-liquidity/
+    │   ├── handler.ts
+    │   ├── index.ts
+    │   ├── input.ts
+    │   ├── output.ts
+    │   └── types.ts
+    ├── collect-fees/
+    │   ├── handler.ts
+    │   ├── index.ts
+    │   ├── input.ts
+    │   ├── output.ts
+    │   └── types.ts
+    ├── list-pools/
+    │   ├── handler.ts
+    │   ├── index.ts
+    │   ├── input.ts
+    │   └── output.ts
+    ├── view-pool/
+    │   ├── handler.ts
+    │   ├── index.ts
+    │   ├── input.ts
+    │   └── output.ts
+    └── list-positions/
+        ├── handler.ts
+        ├── index.ts
+        ├── input.ts
+        └── output.ts
 ```
+
+ABI fragments are exported as `.ts` modules (typed `const` arrays of human-readable signatures) rather than `.json` files — this keeps imports type-checked and avoids the need for a JSON loader.
+
+Shared utilities (`hbar-detection.ts`, `slippage.ts`, `deadline.ts`, `contract-query-result.ts`, `token-evm.ts`) and Zod schemas (`src/shared/schemas/schemas.ts`) are reused from the V1 plugin and live under `src/shared/`. The V2 plugin does not duplicate them.
 
 ### Part 2: Network-Specific Constants
 
 `src/plugins/saucerswap-v2/constants.ts` stores contract IDs, LP NFT token IDs, and API URLs per network:
 
 ```ts
-import { SupportedNetwork } from '@/core/types/shared.types';
+import { ConfigurationError, SupportedNetwork } from '@hiero-ledger/hiero-cli';
+import { z } from 'zod';
 
 export interface SaucerSwapV2NetworkConfig {
   swapRouterContractId: string;
@@ -150,6 +152,19 @@ export const SAUCERSWAP_V2_CONFIG: Partial<
   },
 };
 
+export function getSaucerSwapV2Config(
+  network: SupportedNetwork,
+): SaucerSwapV2NetworkConfig {
+  const config = SAUCERSWAP_V2_CONFIG[network];
+  if (!config) {
+    throw new ConfigurationError(
+      `SaucerSwap V2 is not configured for network "${network}"`,
+      { context: { network } },
+    );
+  }
+  return config;
+}
+
 export enum FeeTier {
   VERY_STABLE = 500, // 0.05%, tick spacing 10
   STABLE = 1500, // 0.15%, tick spacing 30
@@ -157,25 +172,19 @@ export enum FeeTier {
   VOLATILE = 10000, // 1.00%, tick spacing 200
 }
 
-export const FEE_TIER_TO_TICK_SPACING: Record<FeeTier, number> = {
+export const FEE_TIER_TO_TICK_SPACING: Record<number, number> = {
   [FeeTier.VERY_STABLE]: 10,
   [FeeTier.STABLE]: 30,
   [FeeTier.STANDARD]: 60,
   [FeeTier.VOLATILE]: 200,
 };
-
-export const DEFAULT_SWAP_GAS = 300_000;
-export const DEFAULT_MINT_POSITION_GAS = 900_000;
-export const DEFAULT_INCREASE_LIQUIDITY_GAS = 330_000;
-export const DEFAULT_DECREASE_LIQUIDITY_GAS = 300_000;
-export const DEFAULT_COLLECT_FEES_GAS = 300_000;
-export const DEFAULT_DEADLINE_SECONDS = 180;
-export const DEFAULT_SLIPPAGE_PERCENT = 0.5;
 ```
+
+Per-command default gas, deadline and slippage values are declared in the plugin manifest options (see Part 8), not as top-level constants.
 
 ### Part 3: ABI Encoding Strategy
 
-This is the most significant architectural difference from ADR-013. The V1 plugin builds transactions using `ContractFunctionParameters` (the Hedera SDK's named-parameter helper). V2 contracts use complex Solidity structs (`ExactInputParams`, `MintParams`, `DecreaseLiquidityParams`, etc.) that require ABI encoding.
+This is the most significant architectural difference from ADR-001. The V1 plugin builds transactions using `ContractFunctionParameters` (the Hedera SDK's named-parameter helper). V2 contracts use complex Solidity structs (`ExactInputParams`, `MintParams`, `DecreaseLiquidityParams`, etc.) that require ABI encoding.
 
 **Decision:** The plugin performs ABI encoding within its own `utils/abi-encoder.ts` using `ethers.Interface`, which is already a dependency of the CLI (used by `ContractQueryService` and `ContractCreateFlow`). The raw `Uint8Array` is passed to `ContractExecuteTransaction.setFunctionParameters()` directly — the plugin constructs the `ContractExecuteTransaction` itself rather than going through `ContractTransactionService.contractExecuteTransaction()`, because the latter requires `functionName` + `ContractFunctionParameters` which cannot express the V2 struct calls.
 
@@ -311,30 +320,43 @@ export function tickRangeFromPercent(
 }
 ```
 
-### Part 7: SaucerSwap V2 REST API (same core service as ADR-013)
+### Part 7: SaucerSwap V2 REST API (same shared service as ADR-001)
 
-**Decision:** Do **not** add `saucerswap-v2-api.ts` under the plugin. V2 pool and position HTTP calls use the same **`SaucerSwapApiService`** introduced in [ADR-013](ADR-001-saucerswap-v1-dex-plugin) Part 5.
+**Decision:** Do **not** add `saucerswap-v2-api.ts` under the plugin. V2 pool and position HTTP calls use the same shared **`SaucerSwapApiService`** introduced in [ADR-001](ADR-001-saucerswap-v1-dex-plugin.md) Part 5, located at `src/shared/services/saucerswap-api/`.
 
-1. **Zod schemas** — Add V2 shapes to `src/core/schemas/common-schemas.ts`, e.g. `SaucerSwapV2ApiTokenSchema`, `SaucerSwapV2ApiPoolSchema`, `SaucerSwapV2ApiPositionSchema`, plus array helpers / inferred types (`SaucerSwapV2ApiPool`, `SaucerSwapV2ApiPosition`, …).
+1. **Zod schemas** — V2 shapes live in `src/shared/schemas/schemas.ts` alongside the V1 schemas: `SaucerSwapV2ApiTokenSchema`, `SaucerSwapV2ApiPoolSchema`, `SaucerSwapV2ApiPositionSchema`, array helpers, `SaucerSwapV2FeeTierSchema`, and inferred types (`SaucerSwapV2ApiPool`, `SaucerSwapV2ApiPosition`, …).
 
-2. **Extend `SaucerSwapApiService`** — The interface also declares:
-   - `fetchV2Pools(apiBaseUrl: string): Promise<SaucerSwapV2ApiPool[]>` — `GET {apiBaseUrl}/v2/pools/`
-   - `fetchV2Positions(apiBaseUrl: string, accountId: string): Promise<SaucerSwapV2ApiPosition[]>` — `GET {apiBaseUrl}/v2/nfts/{accountId}`
+2. **`SaucerSwapApiService`** — The same interface used by V1 also declares the V2 methods:
+   - `fetchV2Pools(apiBaseUrl, apiKey): Promise<SaucerSwapV2ApiPool[]>` — `GET {apiBaseUrl}/v2/pools/` with `x-api-key` header
+   - `fetchV2Positions(apiBaseUrl, accountId, apiKey): Promise<SaucerSwapV2ApiPosition[]>` — `GET {apiBaseUrl}/v2/nfts/{accountId}`
 
-3. **`SaucerSwapApiServiceImpl`** — Implements the above using `fetch`, `NetworkError` on failure, and `parseWithSchema` with the V2 schemas from `common-schemas`.
+3. **`SaucerSwapApiServiceImpl`** — Implements the above using `fetch` with the `x-api-key` header, `NetworkError` on failure, and `parseWithSchema` with the V2 schemas.
 
-4. **Plugins** — `saucerswap-v2` read-only commands call `api.saucerSwapApi.fetchV2Pools` / `fetchV2Positions` as appropriate.
+4. **Plugins** — `saucerswap-v2` read-only commands (`list-pools`, `view-pool`, `list-positions`) call `saucerSwapApi.fetchV2Pools` / `fetchV2Positions`. The API key is supplied by the user through the `--api-key` CLI option on each read-only command.
 
 Illustrative additions:
 
 ```ts
 // saucerswap-api-service.interface.ts (excerpt)
 export interface SaucerSwapApiService {
-  fetchAllPools(apiBaseUrl: string): Promise<SaucerSwapV1ApiLiquidityPool[]>;
-  fetchV2Pools(apiBaseUrl: string): Promise<SaucerSwapV2ApiPool[]>;
+  fetchAllPools(
+    apiBaseUrl: string,
+    apiKey: string,
+  ): Promise<SaucerSwapV1ApiLiquidityPool[]>;
+  findV1PoolForTokenPair(
+    apiBaseUrl: string,
+    apiKey: string,
+    tokenIdA: string,
+    tokenIdB: string,
+  ): Promise<SaucerSwapV1ApiLiquidityPool | null>;
+  fetchV2Pools(
+    apiBaseUrl: string,
+    apiKey: string,
+  ): Promise<SaucerSwapV2ApiPool[]>;
   fetchV2Positions(
     apiBaseUrl: string,
     accountId: string,
+    apiKey: string,
   ): Promise<SaucerSwapV2ApiPosition[]>;
 }
 ```
@@ -343,7 +365,7 @@ export interface SaucerSwapApiService {
 
 #### 8.1 Swap (Exact Input)
 
-`SaucerSwapV2SwapCommand` extends `BaseTransactionCommand`. Swaps an exact amount of input token for at least a minimum amount of output token.
+`saucerswapV2Swap` is a transaction handler. Swaps an exact amount of input token for at least a minimum amount of output token.
 
 **Solidity function:** `SwapRouter.exactInput(ExactInputParams)`
 
@@ -374,61 +396,58 @@ When the input token is HBAR, the call is wrapped in `multicall([exactInput, ref
 | `--gas`         | `-g`  | NUMBER | no       | Gas limit (default: 300,000)               |
 | `--key-manager` | `-k`  | STRING | no       | Key manager                                |
 
-**Handler flow:**
+**Handler flow (sketch):**
 
 ```ts
-export class SaucerSwapV2SwapCommand extends BaseTransactionCommand<...> {
-  async normalizeParams(args: CommandHandlerArgs): Promise<SwapV2NormalizedParams> {
-    const validArgs = SwapV2InputSchema.parse(args.args);
-    const config = getSaucerSwapV2Config(network);
+export const saucerswapV2Swap: CommandHandler = async (args) => {
+  const input = SaucerSwapV2SwapInputSchema.parse(args.args);
+  const config = getSaucerSwapV2Config(network);
 
-    const fromEvm = await resolveTokenEvmAddress(api, validArgs.from, network);
-    const toEvm = await resolveTokenEvmAddress(api, validArgs.to, network);
-    const recipientEvm = await resolveOperatorEvmAddress(api, network);
-    const fromIsHbar = isHbar(validArgs.from);
+  const fromEvm = await resolveTokenEvmAddress(api, input.from, network);
+  const toEvm = await resolveTokenEvmAddress(api, input.to, network);
+  const recipientEvm = await resolveOperatorEvmAddress(api, network);
+  const fromIsHbar = isHbar(input.from, config.whbarTokenId);
 
-    // Build the packed bytes path: [fromEvm + feeTier + toEvm]
-    const pathFromEvm = fromIsHbar ? config.whbarEvmAddress : fromEvm;
-    const pathToEvm = isHbar(validArgs.to) ? config.whbarEvmAddress : toEvm;
-    const path = encodePath([pathFromEvm, pathToEvm], [validArgs.feeTier]);
+  // Build the packed bytes path: [fromEvm + feeTier + toEvm]
+  const pathFromEvm = fromIsHbar ? whbarEvm(config) : fromEvm;
+  const pathToEvm = isHbar(input.to, config.whbarTokenId)
+    ? whbarEvm(config)
+    : toEvm;
+  const path = encodePath([pathFromEvm, pathToEvm], [input.feeTier]);
 
-    // Compute min output from slippage or explicit --min-output
-    const amountOutMin = validArgs.minOutput ?? computeMinOutput(amountIn, validArgs.slippage);
+  const amountOutMin =
+    input.minOutput ?? computeMinOutput(amountIn, input.slippage);
 
-    return { config, path, recipientEvm, amountIn, amountOutMin, fromIsHbar, ... };
+  const swapParams = {
+    path,
+    recipient: recipientEvm,
+    deadline: computeDeadline(input.deadline),
+    amountIn,
+    amountOutMinimum: amountOutMin,
+  };
+
+  const swapEncoded = encodeContractCall(SWAP_ROUTER_ABI, 'exactInput', [
+    swapParams,
+  ]);
+  const functionParameters = fromIsHbar
+    ? encodeMulticall(SWAP_ROUTER_ABI, [
+        swapEncoded,
+        encodeContractCall(SWAP_ROUTER_ABI, 'refundETH', []),
+      ])
+    : swapEncoded;
+
+  const tx = new ContractExecuteTransaction()
+    .setContractId(ContractId.fromString(config.swapRouterContractId))
+    .setGas(input.gas)
+    .setFunctionParameters(functionParameters);
+
+  if (fromIsHbar) {
+    tx.setPayableAmount(Hbar.from(amountIn, HbarUnit.Tinybar));
   }
 
-  async buildTransaction(args, params): Promise<BuildTransactionResult> {
-    const swapParams = {
-      path: params.path,
-      recipient: params.recipientEvm,
-      deadline: computeDeadline(params.deadlineSeconds),
-      amountIn: params.amountIn,
-      amountOutMinimum: params.amountOutMin,
-    };
-
-    const swapEncoded = encodeContractCall(swapRouterAbi, 'exactInput', [swapParams]);
-
-    let functionParameters: Uint8Array;
-    if (params.fromIsHbar) {
-      const refundEncoded = encodeContractCall(swapRouterAbi, 'refundETH', []);
-      functionParameters = encodeMulticall(swapRouterAbi, [swapEncoded, refundEncoded]);
-    } else {
-      functionParameters = swapEncoded;
-    }
-
-    const tx = new ContractExecuteTransaction()
-      .setContractId(ContractId.fromString(params.config.swapRouterContractId))
-      .setGas(params.gas)
-      .setFunctionParameters(functionParameters);
-
-    if (params.fromIsHbar) {
-      tx.setPayableAmount(Hbar.from(params.amountIn, HbarUnit.Tinybar));
-    }
-
-    return { transaction: tx };
-  }
-}
+  // Signing + execution go through the CLI's TxSignService / TxExecuteService.
+  return runTransaction(tx, args);
+};
 ```
 
 **Pre-checks:**
@@ -445,7 +464,7 @@ hcli saucerswap-v2 swap --from 0.0.731861 --to 0.0.2000 --amount 500 --fee-tier 
 
 #### 8.2 Buy (Exact Output)
 
-`SaucerSwapV2BuyCommand` extends `BaseTransactionCommand`. The user specifies the exact output amount to receive; the command computes the maximum input.
+`saucerswapV2Buy` is a transaction handler. The user specifies the exact output amount to receive; the command computes the maximum input (or honours `--max-input`).
 
 **Solidity function:** `SwapRouter.exactOutput(ExactOutputParams)`
 
@@ -486,7 +505,7 @@ hcli saucerswap-v2 buy --from 0.0.731861 --to HBAR --amount 10 --max-input 6000 
 
 #### 8.3 Mint Position (New Concentrated Liquidity)
 
-`SaucerSwapV2MintPositionCommand` extends `BaseTransactionCommand`. Creates a new concentrated liquidity position in an existing V2 pool and mints an NFT representing the position.
+`saucerswapV2MintPosition` is a transaction handler. Creates a new concentrated liquidity position in an existing V2 pool and mints an NFT representing the position.
 
 **Solidity function:** `NonfungiblePositionManager.mint(MintParams)`
 
@@ -555,7 +574,7 @@ hcli saucerswap-v2 mint-position --token-a 0.0.2000 --token-b 0.0.3000 --fee-tie
 
 #### 8.4 Increase Liquidity
 
-`SaucerSwapV2IncreaseLiquidityCommand` extends `BaseTransactionCommand`. Adds more liquidity to an existing position identified by its NFT serial number.
+`saucerswapV2IncreaseLiquidity` is a transaction handler. Adds more liquidity to an existing position identified by its NFT serial number.
 
 **Solidity function:** `NonfungiblePositionManager.increaseLiquidity(IncreaseLiquidityParams)`
 
@@ -576,25 +595,27 @@ When one token is HBAR: `multicall([increaseLiquidity, refundETH])`.
 
 **CLI options:**
 
-| Option          | Short | Type   | Required | Description                                 |
-| --------------- | ----- | ------ | -------- | ------------------------------------------- |
-| `--position`    | `-p`  | NUMBER | yes      | NFT serial number of the liquidity position |
-| `--amount-a`    |       | STRING | yes      | Desired amount of token0                    |
-| `--amount-b`    |       | STRING | yes      | Desired amount of token1                    |
-| `--slippage`    | `-s`  | NUMBER | no       | Slippage % (default: 0.5)                   |
-| `--deadline`    | `-d`  | NUMBER | no       | Deadline seconds (default: 180)             |
-| `--gas`         | `-g`  | NUMBER | no       | Gas limit (default: 330,000)                |
-| `--key-manager` | `-k`  | STRING | no       | Key manager                                 |
+| Option          | Short | Type   | Required | Default   | Description                                                                        |
+| --------------- | ----- | ------ | -------- | --------- | ---------------------------------------------------------------------------------- |
+| `--position`    | `-p`  | NUMBER | yes      | —         | LP position NFT serial (tokenId)                                                   |
+| `--amount-a`    |       | STRING | yes      | —         | Amount for pool token0 (display, or raw with `t` in token0 decimals)               |
+| `--amount-b`    |       | STRING | yes      | —         | Amount for pool token1                                                             |
+| `--hbar-amount` |       | STRING | no       | —         | Optional payable HBAR for WHBAR/HBAR-side adds (display HBAR, or raw tinybars `t`) |
+| `--slippage`    | `-s`  | NUMBER | no       | `0.5`     | Slippage (%) for minimum token amounts                                             |
+| `--deadline`    | `-d`  | NUMBER | no       | `180`     | Deadline in seconds from now                                                       |
+| `--gas`         | `-g`  | NUMBER | no       | `330_000` | Gas limit                                                                          |
+| `--key-manager` | `-k`  | STRING | no       | —         | Key manager                                                                        |
 
 CLI usage:
 
 ```
 hcli saucerswap-v2 increase-liquidity --position 42 --amount-a 5 --amount-b 2500
+hcli saucerswap-v2 increase-liquidity --position 42 --amount-a 10 --amount-b 0 --hbar-amount 10
 ```
 
 #### 8.5 Decrease Liquidity
 
-`SaucerSwapV2DecreaseLiquidityCommand` extends `BaseTransactionCommand`. Removes liquidity from an existing position. Composes a multicall of up to four operations.
+`saucerswapV2DecreaseLiquidity` is a transaction handler. Removes liquidity from an existing position. Composes a multicall of up to four operations.
 
 **Solidity functions (composed via multicall):**
 
@@ -626,17 +647,18 @@ function collect(CollectParams calldata params) external payable
 
 **CLI options:**
 
-| Option          | Short | Type    | Required | Description                                        |
-| --------------- | ----- | ------- | -------- | -------------------------------------------------- |
-| `--position`    | `-p`  | NUMBER  | yes      | NFT serial number                                  |
-| `--liquidity`   | `-l`  | STRING  | yes      | Liquidity amount to remove, or `all` for full exit |
-| `--slippage`    | `-s`  | NUMBER  | no       | Slippage % (default: 0.5)                          |
-| `--deadline`    | `-d`  | NUMBER  | no       | Deadline seconds (default: 180)                    |
-| `--burn`        |       | BOOLEAN | no       | Burn the NFT after full exit                       |
-| `--gas`         | `-g`  | NUMBER  | no       | Gas limit (default: 300,000)                       |
-| `--key-manager` | `-k`  | STRING  | no       | Key manager                                        |
+| Option          | Short | Type    | Required | Default   | Description                                        |
+| --------------- | ----- | ------- | -------- | --------- | -------------------------------------------------- |
+| `--position`    | `-p`  | NUMBER  | yes      | —         | NFT serial number                                  |
+| `--liquidity`   | `-l`  | STRING  | yes      | —         | Liquidity amount to remove, or `all` for full exit |
+| `--unwrap-hbar` |       | BOOLEAN | no       | `false`   | Unwrap WHBAR to HBAR as part of the multicall      |
+| `--burn`        |       | BOOLEAN | no       | `false`   | Burn the NFT after full exit                       |
+| `--slippage`    | `-s`  | NUMBER  | no       | `0.5`     | Slippage (%) applied to min amounts                |
+| `--deadline`    | `-d`  | NUMBER  | no       | `180`     | Deadline seconds                                   |
+| `--gas`         | `-g`  | NUMBER  | no       | `300_000` | Gas limit                                          |
+| `--key-manager` | `-k`  | STRING  | no       | —         | Key manager                                        |
 
-**Pre-checks:** When `--burn` is set, the user's account must approve an NFT spender allowance for the NonfungiblePositionManager contract.
+**Pre-checks:** When `--burn` is set, the user's account must approve an NFT spender allowance for the NonfungiblePositionManager contract. `--unwrap-hbar` is only meaningful when one side of the pool is WHBAR.
 
 CLI usage:
 
@@ -647,7 +669,7 @@ hcli saucerswap-v2 decrease-liquidity --position 42 --liquidity 50000000
 
 #### 8.6 Collect Fees
 
-`SaucerSwapV2CollectFeesCommand` extends `BaseTransactionCommand`. Claims earned swap fees from a position without removing liquidity.
+`saucerswapV2CollectFees` is a transaction handler. Claims earned swap fees from a position without removing liquidity.
 
 **Solidity function:** `NonfungiblePositionManager.collect(CollectParams)` — sets `amount0Max` and `amount1Max` to `type(uint128).max` to collect all available fees.
 
@@ -655,39 +677,42 @@ When the pool includes HBAR: `multicall([collect, unwrapWHBAR])`.
 
 **CLI options:**
 
-| Option          | Short | Type   | Required | Description                  |
-| --------------- | ----- | ------ | -------- | ---------------------------- |
-| `--position`    | `-p`  | NUMBER | yes      | NFT serial number            |
-| `--gas`         | `-g`  | NUMBER | no       | Gas limit (default: 300,000) |
-| `--key-manager` | `-k`  | STRING | no       | Key manager                  |
+| Option          | Short | Type    | Required | Default   | Description                                |
+| --------------- | ----- | ------- | -------- | --------- | ------------------------------------------ |
+| `--position`    | `-p`  | NUMBER  | yes      | —         | NFT serial number                          |
+| `--unwrap-hbar` |       | BOOLEAN | no       | `false`   | Unwrap WHBAR to HBAR in the same multicall |
+| `--gas`         | `-g`  | NUMBER  | no       | `300_000` | Gas limit                                  |
+| `--key-manager` | `-k`  | STRING  | no       | —         | Key manager                                |
 
 CLI usage:
 
 ```
 hcli saucerswap-v2 collect-fees --position 42
+hcli saucerswap-v2 collect-fees --position 42 --unwrap-hbar
 ```
 
 #### 8.7 List Pools
 
-`SaucerSwapV2ListPoolsCommand` implements the `Command` interface directly (no transaction). Queries the SaucerSwap V2 REST API.
+`saucerswapV2ListPools` is a read-only handler (no transaction). Queries the shared `SaucerSwapApiService.fetchV2Pools`.
 
 **CLI options:**
 
-| Option       | Short | Type   | Required | Description                                       |
-| ------------ | ----- | ------ | -------- | ------------------------------------------------- |
-| `--token`    | `-t`  | STRING | no       | Filter pools containing this token (ID or symbol) |
-| `--fee-tier` |       | NUMBER | no       | Filter by fee tier (500, 1500, 3000, 10000)       |
+| Option       | Short | Type   | Required | Description                                                        |
+| ------------ | ----- | ------ | -------- | ------------------------------------------------------------------ |
+| `--api-key`  |       | STRING | yes      | SaucerSwap API key (sent as `x-api-key` header)                    |
+| `--token`    | `-t`  | STRING | no       | Filter pools containing this token (ID, symbol, or name substring) |
+| `--fee-tier` |       | NUMBER | no       | Filter by fee tier (500, 1500, 3000, 10000)                        |
 
 CLI usage:
 
 ```
-hcli saucerswap-v2 list-pools
-hcli saucerswap-v2 list-pools --token SAUCE --fee-tier 3000
+hcli saucerswap-v2 list-pools --api-key $SAUCERSWAP_API_KEY
+hcli saucerswap-v2 list-pools --api-key $SAUCERSWAP_API_KEY --token SAUCE --fee-tier 3000
 ```
 
 #### 8.8 View Pool
 
-`SaucerSwapV2ViewPoolCommand` implements `Command`. Shows detailed information about a specific V2 pool identified by its two tokens and fee tier.
+`saucerswapV2ViewPool` is a read-only handler. Shows detailed information about a specific V2 pool identified by its two tokens and fee tier.
 
 **Data sources:**
 
@@ -696,50 +721,52 @@ hcli saucerswap-v2 list-pools --token SAUCE --fee-tier 3000
 
 **CLI options:**
 
-| Option       | Short | Type   | Required | Description  |
-| ------------ | ----- | ------ | -------- | ------------ |
-| `--token-a`  | `-a`  | STRING | yes      | First token  |
-| `--token-b`  | `-b`  | STRING | yes      | Second token |
-| `--fee-tier` |       | NUMBER | yes      | Fee tier     |
+| Option       | Short | Type   | Required | Description                                     |
+| ------------ | ----- | ------ | -------- | ----------------------------------------------- |
+| `--api-key`  |       | STRING | yes      | SaucerSwap API key (sent as `x-api-key` header) |
+| `--token-a`  | `-a`  | STRING | yes      | First token                                     |
+| `--token-b`  | `-b`  | STRING | yes      | Second token                                    |
+| `--fee-tier` |       | NUMBER | yes      | Fee tier                                        |
 
 CLI usage:
 
 ```
-hcli saucerswap-v2 view-pool --token-a HBAR --token-b 0.0.731861 --fee-tier 3000
+hcli saucerswap-v2 view-pool --api-key $SAUCERSWAP_API_KEY --token-a HBAR --token-b 0.0.731861 --fee-tier 3000
 ```
 
 #### 8.9 List Positions
 
-`SaucerSwapV2ListPositionsCommand` implements `Command`. Shows all V2 liquidity positions for an account.
+`saucerswapV2ListPositions` is a read-only handler. Shows all V2 liquidity positions for an account (defaults to the current operator).
 
 **CLI options:**
 
-| Option      | Short | Type   | Required | Description                                |
-| ----------- | ----- | ------ | -------- | ------------------------------------------ |
-| `--account` | `-a`  | STRING | no       | Account ID or alias (defaults to operator) |
+| Option      | Short | Type   | Required | Description                                              |
+| ----------- | ----- | ------ | -------- | -------------------------------------------------------- |
+| `--api-key` |       | STRING | yes      | SaucerSwap API key (sent as `x-api-key` header)          |
+| `--account` | `-a`  | STRING | no       | Account ID, EVM address, or alias (defaults to operator) |
 
 **Output includes:** position NFT serial, pool tokens, fee tier, tick range, liquidity, uncollected fees.
 
 CLI usage:
 
 ```
-hcli saucerswap-v2 list-positions
-hcli saucerswap-v2 list-positions --account 0.0.123456
+hcli saucerswap-v2 list-positions --api-key $SAUCERSWAP_API_KEY
+hcli saucerswap-v2 list-positions --api-key $SAUCERSWAP_API_KEY --account 0.0.123456
 ```
 
 ### Part 9: Command Classification
 
-| Command              | Base Class               | On-Chain Effect                                     | V2 Contract Function                                            |
-| -------------------- | ------------------------ | --------------------------------------------------- | --------------------------------------------------------------- |
-| `swap`               | `BaseTransactionCommand` | Swaps exact input for minimum output                | `SwapRouter.exactInput`                                         |
-| `buy`                | `BaseTransactionCommand` | Swaps maximum input for exact output                | `SwapRouter.exactOutput`                                        |
-| `mint-position`      | `BaseTransactionCommand` | Creates concentrated liquidity position + mints NFT | `NonfungiblePositionManager.mint`                               |
-| `increase-liquidity` | `BaseTransactionCommand` | Adds tokens to existing position                    | `NonfungiblePositionManager.increaseLiquidity`                  |
-| `decrease-liquidity` | `BaseTransactionCommand` | Removes liquidity + collects + optional burn        | `NonfungiblePositionManager.decreaseLiquidity + collect + burn` |
-| `collect-fees`       | `BaseTransactionCommand` | Claims earned swap fees                             | `NonfungiblePositionManager.collect`                            |
-| `list-pools`         | `Command`                | None (REST API query)                               | N/A                                                             |
-| `view-pool`          | `Command`                | None (REST API + JSON RPC query)                    | `Factory.getPool`                                               |
-| `list-positions`     | `Command`                | None (REST API query)                               | N/A                                                             |
+| Command              | Type                | On-Chain Effect                                     | V2 Contract Function                                                              |
+| -------------------- | ------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `swap`               | transaction handler | Swaps exact input for minimum output                | `SwapRouter.exactInput` (+ `refundETH` when HBAR in)                              |
+| `buy`                | transaction handler | Swaps maximum input for exact output                | `SwapRouter.exactOutput` (+ `refundETH` when HBAR in)                             |
+| `mint-position`      | transaction handler | Creates concentrated liquidity position + mints NFT | `NonfungiblePositionManager.mint` (+ `refundETH` when HBAR)                       |
+| `increase-liquidity` | transaction handler | Adds tokens to existing position                    | `NonfungiblePositionManager.increaseLiquidity`                                    |
+| `decrease-liquidity` | transaction handler | Removes liquidity + collects + optional unwrap/burn | `NonfungiblePositionManager.decreaseLiquidity + collect (+ unwrapWHBAR) (+ burn)` |
+| `collect-fees`       | transaction handler | Claims earned swap fees (+ optional unwrap)         | `NonfungiblePositionManager.collect (+ unwrapWHBAR)`                              |
+| `list-pools`         | read-only handler   | None (REST API query)                               | N/A                                                                               |
+| `view-pool`          | read-only handler   | None (REST API + JSON RPC query)                    | `Factory.getPool`                                                                 |
+| `list-positions`     | read-only handler   | None (REST API query)                               | N/A                                                                               |
 
 ## Execution Flow
 
@@ -874,9 +901,9 @@ flowchart LR
   LPOS --> API
 ```
 
-## Relationship to ADR-013 (SaucerSwap V1)
+## Relationship to ADR-001 (SaucerSwap V1)
 
-| Aspect           | V1 (ADR-013)                        | V2 (this ADR)                                                      |
+| Aspect           | V1 (ADR-001)                        | V2 (this ADR)                                                      |
 | ---------------- | ----------------------------------- | ------------------------------------------------------------------ |
 | AMM model        | Constant product (Uniswap V2)       | Concentrated liquidity (Uniswap V3)                                |
 | LP token type    | Fungible HTS token                  | Non-fungible HTS NFT (per-position)                                |
@@ -889,20 +916,20 @@ flowchart LR
 | Plugin name      | `saucerswap-v1`                     | `saucerswap-v2`                                                    |
 | REST API path    | `/pools/`                           | `/v2/pools/`, `/v2/nfts/`                                          |
 
-Both plugins share the WHBAR token ID, `hbar-detection.ts`, `slippage.ts`, and `deadline.ts` utilities. These may be extracted to a shared `saucerswap-common/` directory in a future refactoring, but for now each plugin keeps its own copy to avoid coupling.
+Both plugins share the **`SaucerSwapApiService`** at `src/shared/services/saucerswap-api/`, the Zod schemas in `src/shared/schemas/schemas.ts`, and the `hbar-detection.ts`, `slippage.ts`, `deadline.ts`, `contract-query-result.ts` and `token-evm.ts` utilities under `src/shared/util/` — they are not duplicated per plugin.
 
 ## Pros and Cons
 
 ### Pros
 
-- **No core changes required.** Like V1, the plugin reuses existing `ContractQueryService`, `IdentityResolutionService`, `TxSignService`, and `TxExecuteService`. The only deviation is constructing `ContractExecuteTransaction` directly (bypassing `ContractTransactionService`) for ABI-encoded calls.
+- **No host-CLI changes required.** Like V1, the plugin reuses the host CLI's `ContractQueryService`, `IdentityResolutionService`, `TxSignService`, and `TxExecuteService`. The only deviation is constructing `ContractExecuteTransaction` directly (bypassing `ContractTransactionService`) for ABI-encoded calls.
 - **Concentrated liquidity exposure.** Users can access V2's capital-efficient liquidity without manually encoding Solidity structs and packed paths.
 - **Full position lifecycle.** The nine commands cover the entire V2 lifecycle: swaps, position creation, liquidity management, fee collection, and position viewing.
 - **NFT-aware UX.** Commands that operate on positions use `--position <serial>`, making it straightforward to manage individual concentrated liquidity positions.
 - **Fee tier selection.** Explicit `--fee-tier` option ensures users select the correct pool among multiple pools for the same pair.
 - **Multicall composition.** Complex multi-step operations (decrease + collect + unwrap + burn) are handled internally as a single atomic transaction.
-- **Follows established patterns.** File structure, command classification, and hook registration follow the same conventions as V1 (ADR-013) and other plugins.
-- **Typed API responses.** V2 REST API responses are validated with Zod schemas.
+- **Follows established patterns.** File structure, command classification, and hook registration follow the same conventions as V1 (ADR-001) and other plugins.
+- **Typed API responses.** V2 REST API responses are validated with Zod schemas in `src/shared/schemas/schemas.ts`.
 
 ### Cons
 
@@ -916,13 +943,12 @@ Both plugins share the WHBAR token ID, `hbar-detection.ts`, `slippage.ts`, and `
 
 ## Consequences
 
-- A new plugin directory `src/plugins/saucerswap-v2/` is created with the structure described above.
-- ABI JSON files are stored in `src/plugins/saucerswap-v2/abi/` and contain only the function fragments used by the plugin.
-- The plugin manifest is registered in `src/core/shared/config/cli-options.ts` `DEFAULT_PLUGIN_STATE` array.
-- No changes to existing core services or interfaces are needed. The plugin constructs `ContractExecuteTransaction` directly for write operations and uses `ContractQueryService` for read-only calls.
-- Transaction commands (`swap`, `buy`, `mint-position`, `increase-liquidity`, `decrease-liquidity`, `collect-fees`) are compatible with the batch and schedule hooks via `registeredHooks: ['batchify', 'scheduled']` in the manifest.
-- Users must ensure token associations (including LP NFT ID), spender allowances, and NFT spender allowances are in place before using the plugin.
-- Shared utilities (`hbar-detection`, `slippage`, `deadline`) are duplicated from V1 initially; a future ADR may propose a `saucerswap-common` shared utility package.
+- A plugin directory `src/plugins/saucerswap-v2/` with the structure described above.
+- ABI fragments are stored as typed `.ts` modules in `src/plugins/saucerswap-v2/abi/` (`swap-router.ts`, `nft-position-manager.ts`, `factory.ts`, `pool.ts`) and contain only the function fragments used by the plugin.
+- The plugin manifest (`saucerswapV2PluginManifest`) declares all nine commands with their options, output schemas and Handlebars templates.
+- No changes to existing host-CLI services or interfaces are needed. The plugin constructs `ContractExecuteTransaction` directly for write operations (to pass ABI-encoded `Uint8Array` parameters) and uses `ContractQueryService` for read-only contract calls.
+- Shared utilities (`hbar-detection`, `slippage`, `deadline`, `contract-query-result`, `token-evm`) and the SaucerSwap REST service are reused from `src/shared/` — not duplicated in the V2 plugin.
+- Users must ensure token associations (including the LP NFT ID), spender allowances, and NFT spender allowances (for `--burn`) are in place before using the plugin.
 - Multi-hop routing (swaps through intermediate pools) is supported by the `bytes path` encoding and can be exposed as a future enhancement with a `--path` option.
 
 ## Testing Strategy
@@ -931,16 +957,16 @@ Both plugins share the WHBAR token ID, `hbar-detection.ts`, `slippage.ts`, and `
 - **Unit: ABI encoder.** Test `encodeContractCall` with `exactInput`, `mint`, `collect` params. Verify output matches known ABI-encoded values from ethers.js directly.
 - **Unit: Multicall encoder.** Test `encodeMulticall` with 1, 2, and 4 encoded calls. Verify the outer `multicall(bytes[])` encoding wraps correctly.
 - **Unit: Tick math.** Test `nearestUsableTick` with various tick spacings. Test `tickRangeFromPercent` with 5% range on different tick spacings.
-- **Unit: SaucerSwapV2SwapCommand phases.** Mock ABI encoding and verify `buildTransaction` produces a `ContractExecuteTransaction` with correct `functionParameters`, `gas`, `contractId`, and `payableAmount` (for HBAR). Test HBAR→Token, Token→HBAR, Token→Token routing.
-- **Unit: SaucerSwapV2BuyCommand phases.** Same as swap, but verify reversed path and `exactOutput` encoding.
-- **Unit: SaucerSwapV2MintPositionCommand.** Verify `MintParams` struct encoding, multicall composition with `refundETH`, `payableAmount` equals HBAR amount. Verify pool-existence check via `Factory.getPool()` throws on missing pool. Test auto-tick computation from `--range-percent`.
-- **Unit: SaucerSwapV2IncreaseLiquidityCommand.** Verify `IncreaseLiquidityParams` encoding and multicall for HBAR pools.
-- **Unit: SaucerSwapV2DecreaseLiquidityCommand.** Verify multicall composition: `[decreaseLiquidity, collect]` without HBAR, `[decreaseLiquidity, collect, unwrapWHBAR]` with HBAR, `[decreaseLiquidity, collect, unwrapWHBAR, burn]` with burn flag.
-- **Unit: SaucerSwapV2CollectFeesCommand.** Verify `CollectParams` with `MAX_UINT128` for amount0Max/amount1Max. Verify multicall with `unwrapWHBAR` for HBAR pools.
-- **Unit: SaucerSwapV2ListPoolsCommand.** Mock `api.saucerSwapApi.fetchV2Pools` and verify filtering by token ID/symbol and fee tier. Verify empty result handling.
-- **Unit: SaucerSwapV2ViewPoolCommand.** Mock REST API response and `Factory.getPool()` contract query. Verify output includes pool address, tick, liquidity, fee tier, token info.
-- **Unit: SaucerSwapV2ListPositionsCommand.** Mock `api.saucerSwapApi.fetchV2Positions` and verify structured output includes NFT serial, tick range, liquidity, uncollected fees.
-- **Unit: HBAR detection and slippage.** Shared with V1 — test `isHbar`, `computeMinOutput`, `computeDeadline`.
-- **Unit: Constants.** Verify config exists for mainnet and testnet. Verify `getSaucerSwapV2Config` throws for unsupported networks.
-- **Unit: SaucerSwapApiService (core).** Mock `fetch` and verify Zod parsing for V2 pools and positions (schemas in `common-schemas`) and `NetworkError` on non-200 responses.
-- **Integration: Swap lifecycle.** With mocked network, verify full flow from CLI args through `normalizeParams` → `buildTransaction` (ABI encoding + multicall) → `signTransaction` → `executeTransaction` → `outputPreparation`.
+- **Unit: `saucerswapV2Swap`.** Mock ABI encoding and verify the built `ContractExecuteTransaction` has correct `functionParameters`, `gas`, `contractId`, and `payableAmount` (HBAR input only). Test HBAR→Token, Token→HBAR, Token→Token routing.
+- **Unit: `saucerswapV2Buy`.** Same as swap, but verify the reversed path and `exactOutput` encoding, and that `--max-input` is honoured for `amountInMaximum` / `payableAmount`.
+- **Unit: `saucerswapV2MintPosition`.** Verify `MintParams` struct encoding, multicall composition with `refundETH`, and `payableAmount` when one side is HBAR. Verify pool-existence check via `Factory.getPool()` throws on a missing pool. Test auto-tick computation from `--range-percent`.
+- **Unit: `saucerswapV2IncreaseLiquidity`.** Verify `IncreaseLiquidityParams` encoding, multicall for HBAR pools, and that `--hbar-amount` maps to `payableAmount`.
+- **Unit: `saucerswapV2DecreaseLiquidity`.** Verify multicall composition: `[decreaseLiquidity, collect]` without flags, `+ unwrapWHBAR` when `--unwrap-hbar`, `+ burn` when `--burn`. Verify that `--liquidity all` resolves to the full position liquidity.
+- **Unit: `saucerswapV2CollectFees`.** Verify `CollectParams` uses `type(uint128).max` for `amount0Max` / `amount1Max`. Verify multicall with `unwrapWHBAR` when `--unwrap-hbar` is set.
+- **Unit: `saucerswapV2ListPools`.** Mock `SaucerSwapApiService.fetchV2Pools` and verify filtering by token ID/symbol and fee tier. Verify empty result handling.
+- **Unit: `saucerswapV2ViewPool`.** Mock REST API response and `Factory.getPool()` contract query. Verify output includes pool address, tick, liquidity, fee tier, token info.
+- **Unit: `saucerswapV2ListPositions`.** Mock `SaucerSwapApiService.fetchV2Positions` and verify output includes NFT serial, tick range, liquidity, uncollected fees.
+- **Unit: HBAR detection and slippage.** Shared with V1 — test `isHbar`, `computeMinOutput`, `computeMaxInput`, `computeDeadline`.
+- **Unit: Constants.** Verify config exists for mainnet and testnet. Verify `getSaucerSwapV2Config` throws `ConfigurationError` for unsupported networks.
+- **Unit: `SaucerSwapApiServiceImpl`.** Mock `fetch` and verify Zod parsing for V2 pools and positions (schemas in `src/shared/schemas/schemas.ts`), the `x-api-key` header is set, and `NetworkError` is thrown on non-200 responses.
+- **Integration: Swap lifecycle.** With mocked network, verify full flow from CLI args through parameter normalisation → ABI encoding + multicall → sign → execute → output preparation.

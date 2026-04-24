@@ -3,6 +3,7 @@ import type {
   CommandResult,
   ContractTransactionService,
 } from '@hiero-ledger/hiero-cli';
+import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import type { SaucerSwapV1DepositOutput } from './output';
 import type {
   SaucerSwapV1DepositBuildTransactionResult,
@@ -15,16 +16,15 @@ import type {
 
 import { ContractFunctionParameters } from '@hashgraph/sdk';
 import {
-  AliasType,
   BaseTransactionCommand,
   TransactionError,
   ValidationError,
 } from '@hiero-ledger/hiero-cli';
 
 import { getSaucerSwapV1Config } from '@/plugins/saucerswap-v1/constants';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 import { toBigNumber } from '@/shared/util/bignum';
 import { computeDeadline } from '@/shared/util/deadline';
-import { isHbar } from '@/shared/util/hbar-detection';
 import { computeMinOutput } from '@/shared/util/slippage';
 import {
   isRawUnits,
@@ -42,8 +42,11 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
   SaucerSwapV1DepositSignTransactionResult,
   SaucerSwapV1DepositExecuteTransactionResult
 > {
-  constructor() {
+  private readonly saucerSwapHelper: SaucerSwapHelperService;
+
+  constructor(saucerSwapHelper: SaucerSwapHelperService) {
     super(SAUCERSWAP_V1_DEPOSIT_COMMAND_NAME);
+    this.saucerSwapHelper = saucerSwapHelper;
   }
 
   async normalizeParams(
@@ -54,38 +57,30 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
     const network = api.network.getCurrentNetwork();
     const config = getSaucerSwapV1Config(network);
 
-    const aIsHbar = isHbar(validArgs.tokenA.value, config.whbarTokenId);
-    const bIsHbar = isHbar(validArgs.tokenB.value, config.whbarTokenId);
+    const [resolvedA, resolvedB] = await Promise.all([
+      this.saucerSwapHelper.resolveToken({
+        value: validArgs.tokenA.value,
+        type: validArgs.tokenA.type,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
+      this.saucerSwapHelper.resolveToken({
+        value: validArgs.tokenB.value,
+        type: validArgs.tokenB.type,
+        whbarTokenId: config.whbarTokenId,
+        network,
+      }),
+    ]);
+    const tokenInfoA = resolvedA.tokenInfo;
+    const tokenInfoB = resolvedB.tokenInfo;
+    const aIsHbar = resolvedA.isHbar;
+    const bIsHbar = resolvedB.isHbar;
     if (aIsHbar && bIsHbar) {
       throw new ValidationError('Both tokens cannot be HBAR');
     }
 
-    const resolveTokenId = (
-      ref: typeof validArgs.tokenA,
-      refIsHbar: boolean,
-    ) =>
-      refIsHbar
-        ? config.whbarTokenId
-        : api.identityResolution.resolveReferenceToEntityOrEvmAddress({
-            entityReference: ref.value,
-            referenceType: ref.type,
-            network,
-            aliasType: AliasType.Token,
-          }).entityIdOrEvmAddress;
-
-    const [tokenInfoA, tokenInfoB] = await Promise.all([
-      api.mirror.getTokenInfo(resolveTokenId(validArgs.tokenA, aIsHbar)),
-      api.mirror.getTokenInfo(resolveTokenId(validArgs.tokenB, bIsHbar)),
-    ]);
-
-    const operator = api.network.getCurrentOperatorOrThrow();
-    const operatorMirrorInfo = await api.mirror.getAccount(operator.accountId);
-    if (!operatorMirrorInfo || !operatorMirrorInfo.evmAddress) {
-      throw new ValidationError(
-        `Couldn't resolve operator account to evm address`,
-      );
-    }
-    const recipient = operatorMirrorInfo.evmAddress;
+    const recipientAccount = await this.saucerSwapHelper.resolveRecipient();
+    const recipient = recipientAccount.evmAddress!;
 
     const tokenAEvm = tokenEvmAddress(tokenInfoA.token_id);
     const tokenBEvm = tokenEvmAddress(tokenInfoB.token_id);
@@ -251,5 +246,11 @@ export class SaucerSwapV1DepositCommand extends BaseTransactionCommand<
 export async function saucerswapV1Deposit(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  return new SaucerSwapV1DepositCommand().execute(args);
+  return new SaucerSwapV1DepositCommand(
+    new SaucerSwapHelperServiceImpl(
+      args.api.mirror,
+      args.api.network,
+      args.api.identityResolution,
+    ),
+  ).execute(args);
 }
