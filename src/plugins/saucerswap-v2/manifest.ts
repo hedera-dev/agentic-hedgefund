@@ -137,6 +137,10 @@ export const saucerswapV2PluginManifest: PluginManifest = {
         schema: SaucerSwapV2SwapOutputSchema,
         humanTemplate: SAUCERSWAP_V2_SWAP_TEMPLATE,
       },
+      registeredHooks: [
+        { hook: 'batchify-set-batch-key', phase: 'preSignTransaction' },
+        { hook: 'batchify-add-transaction', phase: 'preExecuteTransaction' },
+      ],
     },
     {
       name: 'buy',
@@ -212,6 +216,10 @@ export const saucerswapV2PluginManifest: PluginManifest = {
         schema: SaucerSwapV2BuyOutputSchema,
         humanTemplate: SAUCERSWAP_V2_BUY_TEMPLATE,
       },
+      registeredHooks: [
+        { hook: 'batchify-set-batch-key', phase: 'preSignTransaction' },
+        { hook: 'batchify-add-transaction', phase: 'preExecuteTransaction' },
+      ],
     },
     {
       name: 'mint-position',
@@ -312,6 +320,10 @@ export const saucerswapV2PluginManifest: PluginManifest = {
         schema: SaucerSwapV2MintPositionOutputSchema,
         humanTemplate: SAUCERSWAP_V2_MINT_POSITION_TEMPLATE,
       },
+      registeredHooks: [
+        { hook: 'batchify-set-batch-key', phase: 'preSignTransaction' },
+        { hook: 'batchify-add-transaction', phase: 'preExecuteTransaction' },
+      ],
     },
     {
       name: 'increase-liquidity',
@@ -384,6 +396,10 @@ export const saucerswapV2PluginManifest: PluginManifest = {
         schema: SaucerSwapV2IncreaseLiquidityOutputSchema,
         humanTemplate: SAUCERSWAP_V2_INCREASE_LIQUIDITY_TEMPLATE,
       },
+      registeredHooks: [
+        { hook: 'batchify-set-batch-key', phase: 'preSignTransaction' },
+        { hook: 'batchify-add-transaction', phase: 'preExecuteTransaction' },
+      ],
     },
     {
       name: 'decrease-liquidity',
@@ -456,6 +472,10 @@ export const saucerswapV2PluginManifest: PluginManifest = {
         schema: SaucerSwapV2DecreaseLiquidityOutputSchema,
         humanTemplate: SAUCERSWAP_V2_DECREASE_LIQUIDITY_TEMPLATE,
       },
+      registeredHooks: [
+        { hook: 'batchify-set-batch-key', phase: 'preSignTransaction' },
+        { hook: 'batchify-add-transaction', phase: 'preExecuteTransaction' },
+      ],
     },
     {
       name: 'collect-fees',
@@ -498,6 +518,10 @@ export const saucerswapV2PluginManifest: PluginManifest = {
         schema: SaucerSwapV2CollectFeesOutputSchema,
         humanTemplate: SAUCERSWAP_V2_COLLECT_FEES_TEMPLATE,
       },
+      registeredHooks: [
+        { hook: 'batchify-set-batch-key', phase: 'preSignTransaction' },
+        { hook: 'batchify-add-transaction', phase: 'preExecuteTransaction' },
+      ],
     },
     {
       name: 'list-pools',

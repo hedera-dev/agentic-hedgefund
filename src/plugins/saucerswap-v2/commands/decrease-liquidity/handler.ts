@@ -1,4 +1,7 @@
-import type { CommandHandlerArgs, CommandResult } from '@hiero-ledger/hiero-cli';
+import type {
+  CommandHandlerArgs,
+  CommandResult,
+} from '@hiero-ledger/hiero-cli';
 import {
   BaseTransactionCommand,
   TransactionError,
