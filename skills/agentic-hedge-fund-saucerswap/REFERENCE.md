@@ -14,13 +14,13 @@ If a command ever returns a non-JSON line to stdout, abort the phase and log an 
 
 ## 1. Per-plugin command reference
 
-| Plugin          | File                                         | Commands the skill uses                                                   |
-| --------------- | -------------------------------------------- | ------------------------------------------------------------------------- |
-| `account`       | [`references/account.md`](references/account.md)             | `view` (phase 1), `balance` (phases 1, 5, 7)                              |
-| `token`         | [`references/token.md`](references/token.md)                 | `view` (phase 2), `import` (phase 2 — alias registration), `associate` (phase 6), `allowance-ft` (phase 6); `transfer-ft`, `transfer-nft` available as remediation only |
-| `hbar`          | [`references/hbar.md`](references/hbar.md)                   | `transfer` — only when the caller explicitly tops up the operator         |
-| `network`       | [`references/network.md`](references/network.md)             | `view` (phase 1); `use` / `set-operator` run manually by the caller       |
-| `saucerswap-v1` | [`references/saucerswap-v1.md`](references/saucerswap-v1.md) | `view`, `list` (phase 3), `swap` or `buy` (phase 7); `deposit` / `withdraw` documented but unused by Flow 1 |
+| Plugin          | File                                                         | Commands the skill uses                                                                                                                                                                       |
+| --------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `account`       | [`references/account.md`](references/account.md)             | `view` (phase 1), `balance` (phases 1, 5, 7)                                                                                                                                                  |
+| `token`         | [`references/token.md`](references/token.md)                 | `view` (phase 2), `import` (phase 2 — alias registration), `associate` (phase 6), `allowance-ft` (phase 6); `transfer-ft`, `transfer-nft` available as remediation only                       |
+| `hbar`          | [`references/hbar.md`](references/hbar.md)                   | `transfer` — only when the caller explicitly tops up the operator                                                                                                                             |
+| `network`       | [`references/network.md`](references/network.md)             | `view` (phase 1); `use` / `set-operator` run manually by the caller                                                                                                                           |
+| `saucerswap-v1` | [`references/saucerswap-v1.md`](references/saucerswap-v1.md) | `view`, `list` (phase 3), `swap` or `buy` (phase 7); `deposit` / `withdraw` documented but unused by Flow 1                                                                                   |
 | `saucerswap-v2` | [`references/saucerswap-v2.md`](references/saucerswap-v2.md) | `view-pool`, `list-pools` (phase 3), `swap` or `buy` (phase 7); `list-positions`, `mint-position`, `increase-liquidity`, `decrease-liquidity`, `collect-fees` documented but unused by Flow 1 |
 
 Every per-plugin file ships with: option tables (name / short / type / required / default), one runnable example, the Zod output shape, and — where relevant — `[batchify]` / `[scheduled]` hook annotations.
@@ -42,11 +42,11 @@ When input is HBAR, skip `token allowance-ft` in phase 6 (HBAR is paid via the c
 
 Spender contract IDs by version and command:
 
-| Version | Command | Spender (testnet) | Spender (mainnet) |
-|---|---|---|---|
-| V1 | `swap`, `buy` | `0.0.19264` | `0.0.3045981` |
-| V2 | `swap`, `buy` | `0.0.1414040` | `0.0.3949434` |
-| V2 | `mint-position`, `increase-liquidity` | `0.0.1308184` | `0.0.4053945` |
+| Version | Command                               | Spender (testnet) | Spender (mainnet) |
+| ------- | ------------------------------------- | ----------------- | ----------------- |
+| V1      | `swap`, `buy`                         | `0.0.19264`       | `0.0.3045981`     |
+| V2      | `swap`, `buy`                         | `0.0.1414040`     | `0.0.3949434`     |
+| V2      | `mint-position`, `increase-liquidity` | `0.0.1308184`     | `0.0.4053945`     |
 
 Skip `token allowance-ft` entirely when the input token is `HBAR` — HBAR is paid via the contract's `payableAmount`, not pulled through an allowance.
 
@@ -82,22 +82,22 @@ Phase-specific additions:
 
 CLI errors map to concrete skill behaviour. The skill parses the JSON error envelope (`code`, `recoverable`, `context`) emitted by `CliError` and reacts per the table below. **Every branch — retry, abort, or remediate — appends an `error` entry to the audit log before acting.**
 
-| `code` | Typical phase | Behaviour | Retry |
-|---|---|---|---|
-| `ValidationError` | 1–3 | Abort; surface the offending flag/field | No |
-| `NotFoundError` (account) | 1 | Abort with "operator not configured" + point to Prerequisites | No |
-| `NotFoundError` (pool / token not listed in SaucerSwap REST) | 2–3 | Abort the phase; suggest `saucerswap-v1 list` or `saucerswap-v2 list-pools` | No |
-| `AuthorizationError` | 6–7 | Abort; operator cannot sign — escalate to admin | No |
-| `NetworkError` (REST or consensus) | any | Exponential backoff `1s → 2s → 4s` | ≤ 3 |
-| `TransactionPrecheckError` — `INSUFFICIENT_PAYER_BALANCE` | 7 | Abort; instruct caller to top up operator (optional `hbar transfer`) | No |
-| `TransactionPrecheckError` — `TOKEN_NOT_ASSOCIATED_TO_ACCOUNT` | 7 | Run `token associate`; retry the original command **once** | 1 after fix |
-| `TransactionPrecheckError` — `SPENDER_DOES_NOT_HAVE_ALLOWANCE` / `AMOUNT_EXCEEDS_ALLOWANCE` | 7 | Run `token allowance-ft` for the needed base-unit amount; retry **once** | 1 after fix |
-| `TransactionPrecheckError` — `DUPLICATE_TRANSACTION` | 7 | If the prior attempt is visible in the audit log, treat as idempotent success; else abort | No |
-| `TransactionError` (`recoverable: true`) | 7 | Exponential backoff `1s → 2s → 4s` | ≤ 3 |
-| `TransactionError` (`recoverable: false`) | 7 | Abort; log failure with pre/post balances | No |
-| `StateError` | any | Abort; advise the caller to inspect `hcli` state — never auto-reset | No |
-| `UnexpectedOutput` (see §0) | any | Abort; dump raw stdout into the audit log | No |
-| Unknown / uncategorised | any | Abort; dump the raw error envelope to the audit log | No |
+| `code`                                                                                      | Typical phase | Behaviour                                                                                 | Retry       |
+| ------------------------------------------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------- | ----------- |
+| `ValidationError`                                                                           | 1–3           | Abort; surface the offending flag/field                                                   | No          |
+| `NotFoundError` (account)                                                                   | 1             | Abort with "operator not configured" + point to Prerequisites                             | No          |
+| `NotFoundError` (pool / token not listed in SaucerSwap REST)                                | 2–3           | Abort the phase; suggest `saucerswap-v1 list` or `saucerswap-v2 list-pools`               | No          |
+| `AuthorizationError`                                                                        | 6–7           | Abort; operator cannot sign — escalate to admin                                           | No          |
+| `NetworkError` (REST or consensus)                                                          | any           | Exponential backoff `1s → 2s → 4s`                                                        | ≤ 3         |
+| `TransactionPrecheckError` — `INSUFFICIENT_PAYER_BALANCE`                                   | 7             | Abort; instruct caller to top up operator (optional `hbar transfer`)                      | No          |
+| `TransactionPrecheckError` — `TOKEN_NOT_ASSOCIATED_TO_ACCOUNT`                              | 7             | Run `token associate`; retry the original command **once**                                | 1 after fix |
+| `TransactionPrecheckError` — `SPENDER_DOES_NOT_HAVE_ALLOWANCE` / `AMOUNT_EXCEEDS_ALLOWANCE` | 7             | Run `token allowance-ft` for the needed base-unit amount; retry **once**                  | 1 after fix |
+| `TransactionPrecheckError` — `DUPLICATE_TRANSACTION`                                        | 7             | If the prior attempt is visible in the audit log, treat as idempotent success; else abort | No          |
+| `TransactionError` (`recoverable: true`)                                                    | 7             | Exponential backoff `1s → 2s → 4s`                                                        | ≤ 3         |
+| `TransactionError` (`recoverable: false`)                                                   | 7             | Abort; log failure with pre/post balances                                                 | No          |
+| `StateError`                                                                                | any           | Abort; advise the caller to inspect `hcli` state — never auto-reset                       | No          |
+| `UnexpectedOutput` (see §0)                                                                 | any           | Abort; dump raw stdout into the audit log                                                 | No          |
+| Unknown / uncategorised                                                                     | any           | Abort; dump the raw error envelope to the audit log                                       | No          |
 
 ## 6. Script interfaces
 
@@ -108,17 +108,30 @@ All three scripts live in `scripts/`. Pipe JSON to stdin and parse JSON from std
 Auto-detects V1 vs V2 by field presence.
 
 **V1 input** (reserves present):
+
 ```json
-{ "reserveA": "12345678", "reserveB": "9876543", "decimalsA": 8, "decimalsB": 6 }
+{
+  "reserveA": "12345678",
+  "reserveB": "9876543",
+  "decimalsA": 8,
+  "decimalsB": 6
+}
 ```
 
 **V2 input** (`sqrtRatioX96` present):
+
 ```json
-{ "sqrtRatioX96": "1461446703485210103287273052203988822378723970341", "decimalsA": 8, "decimalsB": 6 }
+{
+  "sqrtRatioX96": "1461446703485210103287273052203988822378723970341",
+  "decimalsA": 8,
+  "decimalsB": 6
+}
 ```
+
 `decimalsA` = decimals of `tokenA` as returned by `view-pool` (pool's token0). `decimalsB` = decimals of token1.
 
 **Output (both):**
+
 ```json
 { "priceAinB": "0.000123456", "priceBinA": "8103.7" }
 ```
@@ -130,28 +143,64 @@ Auto-detects V1 vs V2 by field presence.
 Auto-detects V1 vs V2 by presence of `sqrtRatioX96`.
 
 **V1 exactIn:**
+
 ```json
-{ "mode": "exactIn", "reserveIn": "100000000000", "reserveOut": "8000000000", "amountIn": "10000000" }
+{
+  "mode": "exactIn",
+  "reserveIn": "100000000000",
+  "reserveOut": "8000000000",
+  "amountIn": "10000000"
+}
 ```
+
 **V1 exactOut:**
+
 ```json
-{ "mode": "exactOut", "reserveIn": "100000000000", "reserveOut": "8000000000", "amountOut": "800000" }
+{
+  "mode": "exactOut",
+  "reserveIn": "100000000000",
+  "reserveOut": "8000000000",
+  "amountOut": "800000"
+}
 ```
 
 **V2 exactIn:**
+
 ```json
-{ "mode": "exactIn", "sqrtRatioX96": "...", "liquidity": "...", "feeTier": 3000, "direction": "aToB", "amountIn": "10000000" }
+{
+  "mode": "exactIn",
+  "sqrtRatioX96": "...",
+  "liquidity": "...",
+  "feeTier": 3000,
+  "direction": "aToB",
+  "amountIn": "10000000"
+}
 ```
+
 **V2 exactOut:**
+
 ```json
-{ "mode": "exactOut", "sqrtRatioX96": "...", "liquidity": "...", "feeTier": 3000, "direction": "bToA", "amountOut": "800000" }
+{
+  "mode": "exactOut",
+  "sqrtRatioX96": "...",
+  "liquidity": "...",
+  "feeTier": 3000,
+  "direction": "bToA",
+  "amountOut": "800000"
+}
 ```
 
 `direction` — `"aToB"`: selling token0 (pool's lower-address token) for token1. `"bToA"`: selling token1 for token0. Determine from the caller's `from` token: if `from` = pool's `tokenA` → `"aToB"`, else `"bToA"`.
 
 **Output (all modes):**
+
 ```json
-{ "amountOut": "...", "spotPrice": "...", "effectivePrice": "...", "impactPercent": "0.1234" }
+{
+  "amountOut": "...",
+  "spotPrice": "...",
+  "effectivePrice": "...",
+  "impactPercent": "0.1234"
+}
 // or amountIn for exactOut
 ```
 

@@ -6,7 +6,7 @@ Inspect and switch the active Hedera network, and set / get the operator that si
 
 ---
 
-### `hcli network list` *(used by the skill — phase 1)*
+### `hcli network list` _(used by the skill — phase 1)_
 
 Inspect available networks and the active one.
 
@@ -34,13 +34,13 @@ Same as `view` in current versions — returns the full network table.
 
 ---
 
-### `hcli network use` *(caller runs once in Prerequisites)*
+### `hcli network use` _(caller runs once in Prerequisites)_
 
 Switch the global active network.
 
-| Option      | Short | Type   | Required | Default | Description                                   |
-| ----------- | ----- | ------ | -------- | ------- | --------------------------------------------- |
-| `--global`  | `-g`  | string | **yes**  | —       | `testnet`, `mainnet`, `previewnet`, `localnet`. |
+| Option     | Short | Type   | Required | Default | Description                                     |
+| ---------- | ----- | ------ | -------- | ------- | ----------------------------------------------- |
+| `--global` | `-g`  | string | **yes**  | —       | `testnet`, `mainnet`, `previewnet`, `localnet`. |
 
 **Example:**
 
@@ -54,14 +54,14 @@ hcli network use --global testnet
 
 ---
 
-### `hcli network set-operator` *(caller runs once in Prerequisites)*
+### `hcli network set-operator` _(caller runs once in Prerequisites)_
 
 Register the operator account + key for the active network.
 
-| Option          | Short | Type   | Required | Default | Description                                                                |
-| --------------- | ----- | ------ | -------- | ------- | -------------------------------------------------------------------------- |
-| `--operator`    | `-o`  | string | **yes**  | —       | `accountId:privateKey` pair, key reference, or account alias.              |
-| `--key-manager` | `-k`  | string | no       | —       | `local` or `local_encrypted`.                                              |
+| Option          | Short | Type   | Required | Default | Description                                                   |
+| --------------- | ----- | ------ | -------- | ------- | ------------------------------------------------------------- |
+| `--operator`    | `-o`  | string | **yes**  | —       | `accountId:privateKey` pair, key reference, or account alias. |
+| `--key-manager` | `-k`  | string | no       | —       | `local` or `local_encrypted`.                                 |
 
 **Example:**
 

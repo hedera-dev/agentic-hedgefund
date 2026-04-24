@@ -20,22 +20,23 @@ Token references accept the same forms as V1: Hedera ID (`0.0.X`), account alias
 **Price computation differs from V1.** V2 pools expose `sqrtPriceX96` (a Q64.96 fixed-point number) rather than reserves. Implied price = `(sqrtPriceX96 / 2^96)^2`, adjusted for the difference in token decimals. Pass `sqrtPriceX96`, `tickCurrent`, `decimalsA`, and `decimalsB` into `scripts/implied-price.mjs` — the script detects V2 inputs automatically.
 
 **Allowance strategy** — same `token allowance-ft` pattern as V1, but the spender differs by command type:
+
 - `swap` / `buy` — use the **SwapRouter** contract ID (`0.0.3949434` mainnet / `0.0.1414040` testnet).
 - `mint-position` / `increase-liquidity` — use the **NFT Position Manager** contract ID (`0.0.4053945` mainnet / `0.0.1308184` testnet).
 - `decrease-liquidity` / `collect-fees` — no allowance needed (caller is the NFT owner).
 
 ---
 
-### `hcli saucerswap-v2 view-pool` *(used by the skill — phase 3)*
+### `hcli saucerswap-v2 view-pool` _(used by the skill — phase 3)_
 
 Resolve a pool on-chain via the Factory and enrich it with the SaucerSwap V2 REST API. Returns the pool's current tick, liquidity, and `sqrtPriceX96` — the inputs the skill needs to compute implied price.
 
-| Option        | Short | Type   | Required | Default | Description                                      |
-| ------------- | ----- | ------ | -------- | ------- | ------------------------------------------------ |
-| `--api-key`   |       | string | **yes**  | —       | SaucerSwap API key (sent as `x-api-key` header). |
-| `--token-a`   | `-a`  | string | **yes**  | —       | First token.                                     |
-| `--token-b`   | `-b`  | string | **yes**  | —       | Second token.                                    |
-| `--fee-tier`  |       | number | **yes**  | —       | Fee tier: 500, 1500, 3000, or 10000.             |
+| Option       | Short | Type   | Required | Default | Description                                      |
+| ------------ | ----- | ------ | -------- | ------- | ------------------------------------------------ |
+| `--api-key`  |       | string | **yes**  | —       | SaucerSwap API key (sent as `x-api-key` header). |
+| `--token-a`  | `-a`  | string | **yes**  | —       | First token.                                     |
+| `--token-b`  | `-b`  | string | **yes**  | —       | Second token.                                    |
+| `--fee-tier` |       | number | **yes**  | —       | Fee tier: 500, 1500, 3000, or 10000.             |
 
 **Example:**
 
@@ -51,15 +52,15 @@ hcli saucerswap-v2 view-pool --api-key "$SAUCERSWAP_API_KEY" -a HBAR -b 0.0.4292
 
 ---
 
-### `hcli saucerswap-v2 list-pools` *(used by the skill — phase 3, optional discovery)*
+### `hcli saucerswap-v2 list-pools` _(used by the skill — phase 3, optional discovery)_
 
 Enumerate V2 pools from the SaucerSwap REST API, optionally filtered by token or fee tier.
 
-| Option       | Short | Type   | Required | Default | Description                                          |
-| ------------ | ----- | ------ | -------- | ------- | ---------------------------------------------------- |
-| `--api-key`  |       | string | **yes**  | —       | API key.                                             |
-| `--token`    | `-t`  | string | no       | —       | Filter: token ID, symbol, or name substring.         |
-| `--fee-tier` |       | number | no       | —       | Filter by fee tier.                                  |
+| Option       | Short | Type   | Required | Default | Description                                  |
+| ------------ | ----- | ------ | -------- | ------- | -------------------------------------------- |
+| `--api-key`  |       | string | **yes**  | —       | API key.                                     |
+| `--token`    | `-t`  | string | no       | —       | Filter: token ID, symbol, or name substring. |
+| `--fee-tier` |       | number | no       | —       | Filter by fee tier.                          |
 
 **Example:**
 
@@ -73,21 +74,21 @@ hcli saucerswap-v2 list-pools --api-key "$SAUCERSWAP_API_KEY" --token SAUCE --fe
 
 ---
 
-### `hcli saucerswap-v2 swap` [batchify] [scheduled] *(used by the skill — phase 7 when intent is `swap`)*
+### `hcli saucerswap-v2 swap` [batchify] [scheduled] _(used by the skill — phase 7 when intent is `swap`)_
 
 Exact-input trade: sell exactly `--amount` of `--from`, receive at least `--min-output` (or slippage-derived minimum) of `--to`.
 
-| Option          | Short | Type   | Required | Default       | Description                                                                |
-| --------------- | ----- | ------ | -------- | ------------- | -------------------------------------------------------------------------- |
-| `--from`        | `-f`  | string | **yes**  | —             | Input token.                                                               |
-| `--to`          | `-t`  | string | **yes**  | —             | Output token.                                                              |
-| `--amount`      | `-a`  | string | **yes**  | —             | Exact input amount. Display units, or raw with `"t"`.                      |
-| `--fee-tier`    | `-F`  | number | **yes**  | —             | Pool fee tier: 500, 1500, 3000, or 10000.                                  |
-| `--min-output`  | `-o`  | string | no       | —             | Explicit minimum output. Overrides slippage when set.                      |
-| `--slippage`    | `-s`  | number | no       | `0.5`         | Slippage %, used when `--min-output` is omitted.                           |
-| `--deadline`    | `-d`  | number | no       | `180`         | Deadline seconds from now.                                                 |
-| `--gas`         | `-g`  | number | no       | `300000`      | Gas limit for the contract call.                                           |
-| `--key-manager` | `-k`  | string | no       | config default| `local` or `local_encrypted`.                                              |
+| Option          | Short | Type   | Required | Default        | Description                                           |
+| --------------- | ----- | ------ | -------- | -------------- | ----------------------------------------------------- |
+| `--from`        | `-f`  | string | **yes**  | —              | Input token.                                          |
+| `--to`          | `-t`  | string | **yes**  | —              | Output token.                                         |
+| `--amount`      | `-a`  | string | **yes**  | —              | Exact input amount. Display units, or raw with `"t"`. |
+| `--fee-tier`    | `-F`  | number | **yes**  | —              | Pool fee tier: 500, 1500, 3000, or 10000.             |
+| `--min-output`  | `-o`  | string | no       | —              | Explicit minimum output. Overrides slippage when set. |
+| `--slippage`    | `-s`  | number | no       | `0.5`          | Slippage %, used when `--min-output` is omitted.      |
+| `--deadline`    | `-d`  | number | no       | `180`          | Deadline seconds from now.                            |
+| `--gas`         | `-g`  | number | no       | `300000`       | Gas limit for the contract call.                      |
+| `--key-manager` | `-k`  | string | no       | config default | `local` or `local_encrypted`.                         |
 
 **Example:**
 
@@ -104,20 +105,20 @@ hcli saucerswap-v2 swap --from 0.0.1183558 --to 0.0.429274 --amount 1000 --fee-t
 
 ---
 
-### `hcli saucerswap-v2 buy` [batchify] [scheduled] *(used by the skill — phase 7 when intent is `buy`)*
+### `hcli saucerswap-v2 buy` [batchify] [scheduled] _(used by the skill — phase 7 when intent is `buy`)_
 
 Exact-output trade: receive exactly `--amount` of `--to`, spend at most `--max-input` of `--from`.
 
-| Option          | Short | Type   | Required | Default       | Description                                                              |
-| --------------- | ----- | ------ | -------- | ------------- | ------------------------------------------------------------------------ |
-| `--from`        | `-f`  | string | **yes**  | —             | Input token.                                                             |
-| `--to`          | `-t`  | string | **yes**  | —             | Output token.                                                            |
-| `--amount`      | `-a`  | string | **yes**  | —             | Exact **output** amount. Display units, or raw with `"t"`.               |
-| `--max-input`   | `-i`  | string | **yes**  | —             | Hard cap on input. Display or raw with `"t"`.                            |
-| `--fee-tier`    | `-F`  | number | **yes**  | —             | Pool fee tier: 500, 1500, 3000, or 10000.                                |
-| `--deadline`    | `-d`  | number | no       | `180`         | Deadline seconds from now.                                               |
-| `--gas`         | `-g`  | number | no       | `300000`      | Gas limit.                                                               |
-| `--key-manager` | `-k`  | string | no       | config default| Key manager.                                                             |
+| Option          | Short | Type   | Required | Default        | Description                                                |
+| --------------- | ----- | ------ | -------- | -------------- | ---------------------------------------------------------- |
+| `--from`        | `-f`  | string | **yes**  | —              | Input token.                                               |
+| `--to`          | `-t`  | string | **yes**  | —              | Output token.                                              |
+| `--amount`      | `-a`  | string | **yes**  | —              | Exact **output** amount. Display units, or raw with `"t"`. |
+| `--max-input`   | `-i`  | string | **yes**  | —              | Hard cap on input. Display or raw with `"t"`.              |
+| `--fee-tier`    | `-F`  | number | **yes**  | —              | Pool fee tier: 500, 1500, 3000, or 10000.                  |
+| `--deadline`    | `-d`  | number | no       | `180`          | Deadline seconds from now.                                 |
+| `--gas`         | `-g`  | number | no       | `300000`       | Gas limit.                                                 |
+| `--key-manager` | `-k`  | string | no       | config default | Key manager.                                               |
 
 **Example:**
 
@@ -134,37 +135,37 @@ Unlike V1, `--max-input` is **required** — the plugin does not derive it from 
 
 ---
 
-### `hcli saucerswap-v2 list-positions` *(not used by Flow 1)*
+### `hcli saucerswap-v2 list-positions` _(not used by Flow 1)_
 
 List V2 LP NFT positions held by an account.
 
-| Option      | Short | Type   | Required | Default | Description                             |
-| ----------- | ----- | ------ | -------- | ------- | --------------------------------------- |
-| `--api-key` |       | string | **yes**  | —       | API key.                                |
-| `--account` | `-a`  | string | **yes**  | —       | Account ID, EVM address, or alias.      |
+| Option      | Short | Type   | Required | Default | Description                        |
+| ----------- | ----- | ------ | -------- | ------- | ---------------------------------- |
+| `--api-key` |       | string | **yes**  | —       | API key.                           |
+| `--account` | `-a`  | string | **yes**  | —       | Account ID, EVM address, or alias. |
 
 **Output:** `{ network, accountId, positionCount, positions: [{ tokenSN, feeTier, tickLower, tickUpper, liquidity, tokensOwed0, tokensOwed1 }] }`
 
 ---
 
-### `hcli saucerswap-v2 mint-position` [batchify] [scheduled] *(not used by Flow 1)*
+### `hcli saucerswap-v2 mint-position` [batchify] [scheduled] _(not used by Flow 1)_
 
 Mint a new concentrated liquidity position NFT. Ticks can be supplied explicitly or auto-computed from `--range-percent`.
 
-| Option           | Short | Type   | Required | Default | Description                                                           |
-| ---------------- | ----- | ------ | -------- | ------- | --------------------------------------------------------------------- |
-| `--token-a`      | `-a`  | string | **yes**  | —       | First token.                                                          |
-| `--token-b`      | `-b`  | string | **yes**  | —       | Second token.                                                         |
-| `--fee-tier`     |       | number | **yes**  | —       | Fee tier (500, 1500, 3000, 10000).                                    |
-| `--amount-a`     |       | string | **yes**  | —       | Desired amount for token A (display or raw `"t"`).                    |
-| `--amount-b`     |       | string | **yes**  | —       | Desired amount for token B (display or raw `"t"`).                    |
-| `--tick-lower`   |       | number | no       | —       | Lower tick (optional; auto-computed from `--range-percent`).          |
-| `--tick-upper`   |       | number | no       | —       | Upper tick (optional).                                                |
-| `--range-percent`|       | number | no       | `5`     | Symmetric ±% range when ticks are omitted.                            |
-| `--slippage`     | `-s`  | number | no       | `0.5`   | Slippage %.                                                           |
-| `--deadline`     | `-d`  | number | no       | `180`   | Deadline seconds.                                                     |
-| `--gas`          | `-g`  | number | no       | `900000`| Gas limit (higher — minting is heavier than a swap).                  |
-| `--key-manager`  | `-k`  | string | no       | —       | Key manager.                                                          |
+| Option            | Short | Type   | Required | Default  | Description                                                  |
+| ----------------- | ----- | ------ | -------- | -------- | ------------------------------------------------------------ |
+| `--token-a`       | `-a`  | string | **yes**  | —        | First token.                                                 |
+| `--token-b`       | `-b`  | string | **yes**  | —        | Second token.                                                |
+| `--fee-tier`      |       | number | **yes**  | —        | Fee tier (500, 1500, 3000, 10000).                           |
+| `--amount-a`      |       | string | **yes**  | —        | Desired amount for token A (display or raw `"t"`).           |
+| `--amount-b`      |       | string | **yes**  | —        | Desired amount for token B (display or raw `"t"`).           |
+| `--tick-lower`    |       | number | no       | —        | Lower tick (optional; auto-computed from `--range-percent`). |
+| `--tick-upper`    |       | number | no       | —        | Upper tick (optional).                                       |
+| `--range-percent` |       | number | no       | `5`      | Symmetric ±% range when ticks are omitted.                   |
+| `--slippage`      | `-s`  | number | no       | `0.5`    | Slippage %.                                                  |
+| `--deadline`      | `-d`  | number | no       | `180`    | Deadline seconds.                                            |
+| `--gas`           | `-g`  | number | no       | `900000` | Gas limit (higher — minting is heavier than a swap).         |
+| `--key-manager`   | `-k`  | string | no       | —        | Key manager.                                                 |
 
 **Output:** `{ contractId, network, transactionId, feeTier, tickLower, tickUpper, amount0Desired, amount1Desired }`
 
@@ -172,53 +173,53 @@ Allowance spender: **NFT Position Manager** (`0.0.4053945` mainnet / `0.0.130818
 
 ---
 
-### `hcli saucerswap-v2 increase-liquidity` [batchify] [scheduled] *(not used by Flow 1)*
+### `hcli saucerswap-v2 increase-liquidity` [batchify] [scheduled] _(not used by Flow 1)_
 
 Add liquidity to an existing position NFT.
 
-| Option          | Short | Type   | Required | Default  | Description                                                            |
-| --------------- | ----- | ------ | -------- | -------- | ---------------------------------------------------------------------- |
-| `--position`    | `-p`  | number | **yes**  | —        | LP position NFT serial (tokenId).                                      |
-| `--amount-a`    |       | string | **yes**  | —        | Amount for pool token0.                                                |
-| `--amount-b`    |       | string | **yes**  | —        | Amount for pool token1.                                                |
-| `--hbar-amount` |       | string | no       | —        | Payable HBAR in tinybars for WHBAR-side adds.                          |
-| `--slippage`    | `-s`  | number | no       | `0.5`    | Slippage %.                                                            |
-| `--deadline`    | `-d`  | number | no       | `180`    | Deadline seconds.                                                      |
-| `--gas`         | `-g`  | number | no       | `330000` | Gas limit.                                                             |
-| `--key-manager` | `-k`  | string | no       | —        | Key manager.                                                           |
+| Option          | Short | Type   | Required | Default  | Description                                   |
+| --------------- | ----- | ------ | -------- | -------- | --------------------------------------------- |
+| `--position`    | `-p`  | number | **yes**  | —        | LP position NFT serial (tokenId).             |
+| `--amount-a`    |       | string | **yes**  | —        | Amount for pool token0.                       |
+| `--amount-b`    |       | string | **yes**  | —        | Amount for pool token1.                       |
+| `--hbar-amount` |       | string | no       | —        | Payable HBAR in tinybars for WHBAR-side adds. |
+| `--slippage`    | `-s`  | number | no       | `0.5`    | Slippage %.                                   |
+| `--deadline`    | `-d`  | number | no       | `180`    | Deadline seconds.                             |
+| `--gas`         | `-g`  | number | no       | `330000` | Gas limit.                                    |
+| `--key-manager` | `-k`  | string | no       | —        | Key manager.                                  |
 
 **Output:** `{ contractId, network, transactionId, tokenSN, amount0Desired, amount1Desired }`
 
 ---
 
-### `hcli saucerswap-v2 decrease-liquidity` [batchify] [scheduled] *(not used by Flow 1)*
+### `hcli saucerswap-v2 decrease-liquidity` [batchify] [scheduled] _(not used by Flow 1)_
 
 Remove liquidity from a position; optionally unwrap WHBAR and burn the NFT.
 
-| Option          | Short | Type    | Required | Default  | Description                         |
-| --------------- | ----- | ------- | -------- | -------- | ----------------------------------- |
-| `--position`    | `-p`  | number  | **yes**  | —        | NFT serial number.                  |
-| `--liquidity`   | `-l`  | string  | **yes**  | —        | Liquidity amount to remove.         |
-| `--unwrap-hbar` |       | boolean | no       | `false`  | Unwrap WHBAR to HBAR.               |
-| `--burn`        |       | boolean | no       | `false`  | Burn NFT after full exit.           |
-| `--slippage`    | `-s`  | number  | no       | `0.5`    | Slippage %.                         |
-| `--deadline`    | `-d`  | number  | no       | `180`    | Deadline seconds.                   |
-| `--gas`         | `-g`  | number  | no       | `300000` | Gas limit.                          |
-| `--key-manager` | `-k`  | string  | no       | —        | Key manager.                        |
+| Option          | Short | Type    | Required | Default  | Description                 |
+| --------------- | ----- | ------- | -------- | -------- | --------------------------- |
+| `--position`    | `-p`  | number  | **yes**  | —        | NFT serial number.          |
+| `--liquidity`   | `-l`  | string  | **yes**  | —        | Liquidity amount to remove. |
+| `--unwrap-hbar` |       | boolean | no       | `false`  | Unwrap WHBAR to HBAR.       |
+| `--burn`        |       | boolean | no       | `false`  | Burn NFT after full exit.   |
+| `--slippage`    | `-s`  | number  | no       | `0.5`    | Slippage %.                 |
+| `--deadline`    | `-d`  | number  | no       | `180`    | Deadline seconds.           |
+| `--gas`         | `-g`  | number  | no       | `300000` | Gas limit.                  |
+| `--key-manager` | `-k`  | string  | no       | —        | Key manager.                |
 
 **Output:** `{ contractId, network, transactionId, tokenSN, liquidity, unwrapHbar, burn }`
 
 ---
 
-### `hcli saucerswap-v2 collect-fees` [batchify] [scheduled] *(not used by Flow 1)*
+### `hcli saucerswap-v2 collect-fees` [batchify] [scheduled] _(not used by Flow 1)_
 
 Claim accrued swap fees from an existing position without removing liquidity.
 
-| Option          | Short | Type    | Required | Default  | Description          |
-| --------------- | ----- | ------- | -------- | -------- | -------------------- |
-| `--position`    | `-p`  | number  | **yes**  | —        | NFT serial number.   |
-| `--unwrap-hbar` |       | boolean | no       | `false`  | Unwrap WHBAR.        |
-| `--gas`         | `-g`  | number  | no       | `300000` | Gas limit.           |
-| `--key-manager` | `-k`  | string  | no       | —        | Key manager.         |
+| Option          | Short | Type    | Required | Default  | Description        |
+| --------------- | ----- | ------- | -------- | -------- | ------------------ |
+| `--position`    | `-p`  | number  | **yes**  | —        | NFT serial number. |
+| `--unwrap-hbar` |       | boolean | no       | `false`  | Unwrap WHBAR.      |
+| `--gas`         | `-g`  | number  | no       | `300000` | Gas limit.         |
+| `--key-manager` | `-k`  | string  | no       | —        | Key manager.       |
 
 **Output:** `{ contractId, network, transactionId, tokenSN, unwrapHbar }`

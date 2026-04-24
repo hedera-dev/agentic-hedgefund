@@ -34,8 +34,10 @@ function ensureDir(filePath) {
 
 function cmdAppend() {
   const { path, entry } = readStdinJson();
-  if (!path || typeof path !== 'string') throw new Error('path (string) is required');
-  if (!entry || typeof entry !== 'object') throw new Error('entry (object) is required');
+  if (!path || typeof path !== 'string')
+    throw new Error('path (string) is required');
+  if (!entry || typeof entry !== 'object')
+    throw new Error('entry (object) is required');
 
   const enriched = { timestamp: new Date().toISOString(), ...entry };
   // If the caller already set timestamp, keep theirs.
@@ -44,14 +46,20 @@ function cmdAppend() {
   const line = JSON.stringify(enriched) + '\n';
   ensureDir(path);
   appendFileSync(path, line, 'utf8');
-  process.stdout.write(JSON.stringify({ ok: true, path, bytes: Buffer.byteLength(line, 'utf8') }) + '\n');
+  process.stdout.write(
+    JSON.stringify({ ok: true, path, bytes: Buffer.byteLength(line, 'utf8') }) +
+      '\n',
+  );
 }
 
 function cmdReadSnapshot() {
   const { path, pair, network } = readStdinJson();
-  if (!path || typeof path !== 'string') throw new Error('path (string) is required');
-  if (!pair || typeof pair !== 'string') throw new Error('pair (string) is required');
-  if (!network || typeof network !== 'string') throw new Error('network (string) is required');
+  if (!path || typeof path !== 'string')
+    throw new Error('path (string) is required');
+  if (!pair || typeof pair !== 'string')
+    throw new Error('pair (string) is required');
+  if (!network || typeof network !== 'string')
+    throw new Error('network (string) is required');
 
   if (!existsSync(path)) {
     process.stdout.write('null\n');
@@ -69,7 +77,12 @@ function cmdReadSnapshot() {
     } catch {
       continue;
     }
-    if (entry && entry.phase === 'observation' && entry.pair === pair && entry.network === network) {
+    if (
+      entry &&
+      entry.phase === 'observation' &&
+      entry.pair === pair &&
+      entry.network === network
+    ) {
       process.stdout.write(JSON.stringify(entry) + '\n');
       return;
     }
@@ -81,7 +94,9 @@ function main() {
   const cmd = process.argv[2];
   if (cmd === 'append') return cmdAppend();
   if (cmd === 'read-snapshot') return cmdReadSnapshot();
-  throw new Error(`unknown subcommand "${cmd ?? ''}" (expected "append" or "read-snapshot")`);
+  throw new Error(
+    `unknown subcommand "${cmd ?? ''}" (expected "append" or "read-snapshot")`,
+  );
 }
 
 try {

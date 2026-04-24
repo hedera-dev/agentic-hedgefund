@@ -6,17 +6,17 @@ Transfer native HBAR between accounts. Single command.
 
 ---
 
-### `hcli hbar transfer` [batchify] [scheduled] *(optional remediation only)*
+### `hcli hbar transfer` [batchify] [scheduled] _(optional remediation only)_
 
 Transfer HBAR between two accounts.
 
-| Option          | Short | Type   | Required | Default        | Description                                                                                          |
-| --------------- | ----- | ------ | -------- | -------------- | ---------------------------------------------------------------------------------------------------- |
+| Option          | Short | Type   | Required | Default        | Description                                                                                                 |
+| --------------- | ----- | ------ | -------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
 | `--amount`      | `-a`  | string | **yes**  | —              | Amount. Default: display units. Append `"t"` for tinybars. Example: `"1"` = 1 HBAR, `"100t"` = 100 tinybar. |
-| `--to`          | `-t`  | string | **yes**  | —              | Destination account ID or alias.                                                                     |
-| `--from`        | `-f`  | string | no       | operator       | Source: `accountId:privateKey`, key reference, or alias.                                             |
-| `--memo`        | `-m`  | string | no       | —              | Transfer memo.                                                                                       |
-| `--key-manager` | `-k`  | string | no       | config default | `local` or `local_encrypted`.                                                                        |
+| `--to`          | `-t`  | string | **yes**  | —              | Destination account ID or alias.                                                                            |
+| `--from`        | `-f`  | string | no       | operator       | Source: `accountId:privateKey`, key reference, or alias.                                                    |
+| `--memo`        | `-m`  | string | no       | —              | Transfer memo.                                                                                              |
+| `--key-manager` | `-k`  | string | no       | config default | `local` or `local_encrypted`.                                                                               |
 
 **Example:**
 
@@ -26,4 +26,4 @@ hcli hbar transfer --to myOperator --amount 25 --memo "topup for swap" --format 
 
 **Output:** `{ transactionId, fromAccountId, toAccountId, amountTinybar, network, memo?, status? }`
 
-**How the skill uses it:** Never automatically. Phase 1 may *suggest* this command when the operator's HBAR balance is below the caller-supplied floor, but the skill will not fire it without explicit caller consent — topping up the operator is a governance action, not a retry.
+**How the skill uses it:** Never automatically. Phase 1 may _suggest_ this command when the operator's HBAR balance is below the caller-supplied floor, but the skill will not fire it without explicit caller consent — topping up the operator is a governance action, not a retry.

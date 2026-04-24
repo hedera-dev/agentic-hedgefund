@@ -32,7 +32,9 @@ function toBigInt(value, field) {
     return BigInt(value);
   }
   if (typeof value === 'string' && /^\d+$/.test(value)) return BigInt(value);
-  throw new Error(`${field} must be a non-negative integer (got ${JSON.stringify(value)})`);
+  throw new Error(
+    `${field} must be a non-negative integer (got ${JSON.stringify(value)})`,
+  );
 }
 
 function formatFixed(numerator, denominator) {
@@ -51,8 +53,10 @@ function priceFromReserves(input) {
   const reserveB = toBigInt(input.reserveB, 'reserveB');
   const decimalsA = Number(input.decimalsA);
   const decimalsB = Number(input.decimalsB);
-  if (!Number.isInteger(decimalsA) || decimalsA < 0) throw new Error('decimalsA must be a non-negative integer');
-  if (!Number.isInteger(decimalsB) || decimalsB < 0) throw new Error('decimalsB must be a non-negative integer');
+  if (!Number.isInteger(decimalsA) || decimalsA < 0)
+    throw new Error('decimalsA must be a non-negative integer');
+  if (!Number.isInteger(decimalsB) || decimalsB < 0)
+    throw new Error('decimalsB must be a non-negative integer');
 
   const scaleA = 10n ** BigInt(decimalsA);
   const scaleB = 10n ** BigInt(decimalsB);
@@ -72,8 +76,10 @@ function priceFromSqrtRatioX96(input) {
   const sqrtRatioX96 = toBigInt(input.sqrtRatioX96, 'sqrtRatioX96');
   const decimalsA = Number(input.decimalsA);
   const decimalsB = Number(input.decimalsB);
-  if (!Number.isInteger(decimalsA) || decimalsA < 0) throw new Error('decimalsA must be a non-negative integer');
-  if (!Number.isInteger(decimalsB) || decimalsB < 0) throw new Error('decimalsB must be a non-negative integer');
+  if (!Number.isInteger(decimalsA) || decimalsA < 0)
+    throw new Error('decimalsA must be a non-negative integer');
+  if (!Number.isInteger(decimalsB) || decimalsB < 0)
+    throw new Error('decimalsB must be a non-negative integer');
 
   const scaleA = 10n ** BigInt(decimalsA);
   const scaleB = 10n ** BigInt(decimalsB);
@@ -90,9 +96,10 @@ function main() {
   const raw = readFileSync(0, 'utf8');
   const input = JSON.parse(raw);
 
-  const result = input.sqrtRatioX96 !== undefined
-    ? priceFromSqrtRatioX96(input)
-    : priceFromReserves(input);
+  const result =
+    input.sqrtRatioX96 !== undefined
+      ? priceFromSqrtRatioX96(input)
+      : priceFromReserves(input);
 
   process.stdout.write(JSON.stringify(result) + '\n');
 }

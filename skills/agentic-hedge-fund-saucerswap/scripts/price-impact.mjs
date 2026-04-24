@@ -43,7 +43,9 @@ function toBigInt(value, field) {
     return BigInt(value);
   }
   if (typeof value === 'string' && /^\d+$/.test(value)) return BigInt(value);
-  throw new Error(`${field} must be a non-negative integer (got ${JSON.stringify(value)})`);
+  throw new Error(
+    `${field} must be a non-negative integer (got ${JSON.stringify(value)})`,
+  );
 }
 
 function formatFixed(num, den, fractionDigits = 18) {
@@ -92,13 +94,16 @@ function virtualReserves(sqrtRatioX96, liquidity, direction) {
   const r1 = (liquidity * sqrtRatioX96) / Q96;
   if (direction === 'aToB') return { reserveIn: r0, reserveOut: r1 };
   if (direction === 'bToA') return { reserveIn: r1, reserveOut: r0 };
-  throw new Error(`direction must be "aToB" or "bToA" (got ${JSON.stringify(direction)})`);
+  throw new Error(
+    `direction must be "aToB" or "bToA" (got ${JSON.stringify(direction)})`,
+  );
 }
 
 function runV1(input, mode) {
   const reserveIn = toBigInt(input.reserveIn, 'reserveIn');
   const reserveOut = toBigInt(input.reserveOut, 'reserveOut');
-  if (reserveIn === 0n || reserveOut === 0n) throw new Error('reserves must be non-zero');
+  if (reserveIn === 0n || reserveOut === 0n)
+    throw new Error('reserves must be non-zero');
 
   const feeNum = 997n;
   const feeDen = 1000n;
@@ -107,7 +112,13 @@ function runV1(input, mode) {
   if (mode === 'exactIn') {
     const amountIn = toBigInt(input.amountIn, 'amountIn');
     if (amountIn === 0n) throw new Error('amountIn must be positive');
-    const amountOut = getAmountOut(amountIn, reserveIn, reserveOut, feeNum, feeDen);
+    const amountOut = getAmountOut(
+      amountIn,
+      reserveIn,
+      reserveOut,
+      feeNum,
+      feeDen,
+    );
     return {
       amountOut: amountOut.toString(),
       spotPrice,
@@ -118,7 +129,13 @@ function runV1(input, mode) {
 
   const amountOut = toBigInt(input.amountOut, 'amountOut');
   if (amountOut === 0n) throw new Error('amountOut must be positive');
-  const amountIn = getAmountIn(amountOut, reserveIn, reserveOut, feeNum, feeDen);
+  const amountIn = getAmountIn(
+    amountOut,
+    reserveIn,
+    reserveOut,
+    feeNum,
+    feeDen,
+  );
   return {
     amountIn: amountIn.toString(),
     spotPrice,
@@ -132,21 +149,36 @@ function runV2(input, mode) {
   const liquidity = toBigInt(input.liquidity, 'liquidity');
   const feeTier = Number(input.feeTier);
   if (!Number.isInteger(feeTier) || feeTier <= 0 || feeTier >= 1_000_000) {
-    throw new Error('feeTier must be a positive integer less than 1_000_000 (e.g. 500, 1500, 3000, 10000)');
+    throw new Error(
+      'feeTier must be a positive integer less than 1_000_000 (e.g. 500, 1500, 3000, 10000)',
+    );
   }
   const direction = input.direction;
   const feeNum = BigInt(1_000_000 - feeTier);
   const feeDen = 1_000_000n;
 
-  const { reserveIn, reserveOut } = virtualReserves(sqrtRatioX96, liquidity, direction);
-  if (reserveIn === 0n || reserveOut === 0n) throw new Error('virtual reserves must be non-zero (pool may have no liquidity at current tick)');
+  const { reserveIn, reserveOut } = virtualReserves(
+    sqrtRatioX96,
+    liquidity,
+    direction,
+  );
+  if (reserveIn === 0n || reserveOut === 0n)
+    throw new Error(
+      'virtual reserves must be non-zero (pool may have no liquidity at current tick)',
+    );
 
   const spotPrice = formatFixed(reserveOut, reserveIn);
 
   if (mode === 'exactIn') {
     const amountIn = toBigInt(input.amountIn, 'amountIn');
     if (amountIn === 0n) throw new Error('amountIn must be positive');
-    const amountOut = getAmountOut(amountIn, reserveIn, reserveOut, feeNum, feeDen);
+    const amountOut = getAmountOut(
+      amountIn,
+      reserveIn,
+      reserveOut,
+      feeNum,
+      feeDen,
+    );
     return {
       amountOut: amountOut.toString(),
       spotPrice,
@@ -157,7 +189,13 @@ function runV2(input, mode) {
 
   const amountOut = toBigInt(input.amountOut, 'amountOut');
   if (amountOut === 0n) throw new Error('amountOut must be positive');
-  const amountIn = getAmountIn(amountOut, reserveIn, reserveOut, feeNum, feeDen);
+  const amountIn = getAmountIn(
+    amountOut,
+    reserveIn,
+    reserveOut,
+    feeNum,
+    feeDen,
+  );
   return {
     amountIn: amountIn.toString(),
     spotPrice,
@@ -171,12 +209,13 @@ function main() {
   const input = JSON.parse(raw);
   const mode = input.mode;
   if (mode !== 'exactIn' && mode !== 'exactOut') {
-    throw new Error(`unknown mode "${mode ?? ''}" (expected "exactIn" or "exactOut")`);
+    throw new Error(
+      `unknown mode "${mode ?? ''}" (expected "exactIn" or "exactOut")`,
+    );
   }
 
-  const result = input.sqrtRatioX96 !== undefined
-    ? runV2(input, mode)
-    : runV1(input, mode);
+  const result =
+    input.sqrtRatioX96 !== undefined ? runV2(input, mode) : runV1(input, mode);
 
   process.stdout.write(JSON.stringify(result) + '\n');
 }

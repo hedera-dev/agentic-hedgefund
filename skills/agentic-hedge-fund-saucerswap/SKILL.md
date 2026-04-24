@@ -42,18 +42,18 @@ The skill aborts if `hcli network list --format json` does not report `network: 
 
 ## Caller-supplied inputs
 
-| Input | Required | Notes |
-|---|---|---|
-| `operator` | yes | Account alias or Hedera ID |
-| `tokenA`, `tokenB` | yes | Pair sides. Each: Hedera ID, alias, EVM address, or `HBAR` |
-| `apiKey` | yes | SaucerSwap REST API key (sent as `x-api-key`) |
-| `feeTier` | V2 only | `500`, `1500`, `3000`, or `10000`. Presence selects V2 plugin. |
-| `amountIn` **xor** `amountOut` | yes | `amountIn` → `swap`, `amountOut` → `buy` |
-| `slippage` | no | %, default `0.5` |
-| `baselinePrice` | no | Decimal. If absent, read from audit log (latest `observation` for the same pair + network) |
-| `threshold` | yes | Decimal, e.g. `0.02` = ±2 % |
-| `maxImpactPercent` | no | Price-impact guard, default `2.0` |
-| `balanceFloorHbar` | no | Minimum operator HBAR, default `1` |
+| Input                          | Required | Notes                                                                                      |
+| ------------------------------ | -------- | ------------------------------------------------------------------------------------------ |
+| `operator`                     | yes      | Account alias or Hedera ID                                                                 |
+| `tokenA`, `tokenB`             | yes      | Pair sides. Each: Hedera ID, alias, EVM address, or `HBAR`                                 |
+| `apiKey`                       | yes      | SaucerSwap REST API key (sent as `x-api-key`)                                              |
+| `feeTier`                      | V2 only  | `500`, `1500`, `3000`, or `10000`. Presence selects V2 plugin.                             |
+| `amountIn` **xor** `amountOut` | yes      | `amountIn` → `swap`, `amountOut` → `buy`                                                   |
+| `slippage`                     | no       | %, default `0.5`                                                                           |
+| `baselinePrice`                | no       | Decimal. If absent, read from audit log (latest `observation` for the same pair + network) |
+| `threshold`                    | yes      | Decimal, e.g. `0.02` = ±2 %                                                                |
+| `maxImpactPercent`             | no       | Price-impact guard, default `2.0`                                                          |
+| `balanceFloorHbar`             | no       | Minimum operator HBAR, default `1`                                                         |
 
 ## Workflow checklist
 

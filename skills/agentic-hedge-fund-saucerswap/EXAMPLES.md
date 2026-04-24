@@ -69,10 +69,19 @@ echo '{"reserveA":"100000000000000","reserveB":"60000000000","decimalsA":8,"deci
 Append observation to the audit log:
 
 ```json
-{"timestamp":"2026-04-22T10:10:00Z","network":"testnet","phase":"observation",
- "pair":"HBAR/0.0.429274","reserveA":"100000000000000","reserveB":"60000000000",
- "decimalsA":8,"decimalsB":6,"priceAinB":"0.06","priceBinA":"16.666666666666666666",
- "poolContractId":"0.0.1234567"}
+{
+  "timestamp": "2026-04-22T10:10:00Z",
+  "network": "testnet",
+  "phase": "observation",
+  "pair": "HBAR/0.0.429274",
+  "reserveA": "100000000000000",
+  "reserveB": "60000000000",
+  "decimalsA": 8,
+  "decimalsB": 6,
+  "priceAinB": "0.06",
+  "priceBinA": "16.666666666666666666",
+  "poolContractId": "0.0.1234567"
+}
 ```
 
 ### Phase 4 — Decision
@@ -218,11 +227,27 @@ Alternative: omit `--max-input` and let the router's `getAmountsIn` + `--slippag
 ### Resulting audit entry
 
 ```json
-{"timestamp":"2026-04-22T10:25:00Z","network":"testnet","phase":"trade",
- "pair":"HBAR/0.0.1183558","command":"buy",
- "args":{"from":"HBAR","to":"0.0.1183558","amount":"5000","maxInput":"2.6","slippage":0.5},
- "transactionId":"…","direction":"HBAR_FOR_TOKEN",
- "amountOut":"5000000000","amountInMax":"260000000",
- "balancesBefore":{"hbar":"239.987","tokens":[]},
- "balancesAfter":{"hbar":"237.467","tokens":[{"tokenId":"0.0.1183558","balance":"5000000000"}]}}
+{
+  "timestamp": "2026-04-22T10:25:00Z",
+  "network": "testnet",
+  "phase": "trade",
+  "pair": "HBAR/0.0.1183558",
+  "command": "buy",
+  "args": {
+    "from": "HBAR",
+    "to": "0.0.1183558",
+    "amount": "5000",
+    "maxInput": "2.6",
+    "slippage": 0.5
+  },
+  "transactionId": "…",
+  "direction": "HBAR_FOR_TOKEN",
+  "amountOut": "5000000000",
+  "amountInMax": "260000000",
+  "balancesBefore": { "hbar": "239.987", "tokens": [] },
+  "balancesAfter": {
+    "hbar": "237.467",
+    "tokens": [{ "tokenId": "0.0.1183558", "balance": "5000000000" }]
+  }
+}
 ```
