@@ -1,9 +1,9 @@
 ---
-name: agentic-hedge-fund-v1-swap
+name: agentic-hedge-fund-saucerswap
 description: Observe a SaucerSwap V1 or V2 pool and execute a risk-checked swap (exact input) or buy (exact output) through the Hiero CLI. Use when the user asks to monitor a V1 or V2 pool, compute an implied price, run the "Flow 1" hedge-fund scenario, or when an intent specifies either amountIn (→ swap) or amountOut (→ buy). V2 is selected when the caller provides a feeTier.
 ---
 
-# Agentic Hedge Fund — SaucerSwap V1 / V2 Swap / Buy
+# Agentic Hedge Fund — SaucerSwap Swap / Buy
 
 A seven-phase workflow that observes a SaucerSwap pool (V1 constant-product **or** V2 concentrated liquidity), applies a configurable threshold rule against a baseline price, and executes either an exact-input `swap` or an exact-output `buy` with full pre-flight risk checks and an append-only audit log.
 

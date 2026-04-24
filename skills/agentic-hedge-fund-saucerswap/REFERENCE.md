@@ -86,7 +86,7 @@ CLI errors map to concrete skill behaviour. The skill parses the JSON error enve
 |---|---|---|---|
 | `ValidationError` | 1–3 | Abort; surface the offending flag/field | No |
 | `NotFoundError` (account) | 1 | Abort with "operator not configured" + point to Prerequisites | No |
-| `NotFoundError` (pool / token not listed in SaucerSwap REST) | 2–3 | Abort the phase; suggest `saucerswap-v1 list --api-key …` | No |
+| `NotFoundError` (pool / token not listed in SaucerSwap REST) | 2–3 | Abort the phase; suggest `saucerswap-v1 list` or `saucerswap-v2 list-pools` | No |
 | `AuthorizationError` | 6–7 | Abort; operator cannot sign — escalate to admin | No |
 | `NetworkError` (REST or consensus) | any | Exponential backoff `1s → 2s → 4s` | ≤ 3 |
 | `TransactionPrecheckError` — `INSUFFICIENT_PAYER_BALANCE` | 7 | Abort; instruct caller to top up operator (optional `hbar transfer`) | No |
@@ -98,3 +98,73 @@ CLI errors map to concrete skill behaviour. The skill parses the JSON error enve
 | `StateError` | any | Abort; advise the caller to inspect `hcli` state — never auto-reset | No |
 | `UnexpectedOutput` (see §0) | any | Abort; dump raw stdout into the audit log | No |
 | Unknown / uncategorised | any | Abort; dump the raw error envelope to the audit log | No |
+
+## 6. Script interfaces
+
+All three scripts live in `scripts/`. Pipe JSON to stdin and parse JSON from stdout.
+
+### `scripts/implied-price.mjs`
+
+Auto-detects V1 vs V2 by field presence.
+
+**V1 input** (reserves present):
+```json
+{ "reserveA": "12345678", "reserveB": "9876543", "decimalsA": 8, "decimalsB": 6 }
+```
+
+**V2 input** (`sqrtRatioX96` present):
+```json
+{ "sqrtRatioX96": "1461446703485210103287273052203988822378723970341", "decimalsA": 8, "decimalsB": 6 }
+```
+`decimalsA` = decimals of `tokenA` as returned by `view-pool` (pool's token0). `decimalsB` = decimals of token1.
+
+**Output (both):**
+```json
+{ "priceAinB": "0.000123456", "priceBinA": "8103.7" }
+```
+
+---
+
+### `scripts/price-impact.mjs`
+
+Auto-detects V1 vs V2 by presence of `sqrtRatioX96`.
+
+**V1 exactIn:**
+```json
+{ "mode": "exactIn", "reserveIn": "100000000000", "reserveOut": "8000000000", "amountIn": "10000000" }
+```
+**V1 exactOut:**
+```json
+{ "mode": "exactOut", "reserveIn": "100000000000", "reserveOut": "8000000000", "amountOut": "800000" }
+```
+
+**V2 exactIn:**
+```json
+{ "mode": "exactIn", "sqrtRatioX96": "...", "liquidity": "...", "feeTier": 3000, "direction": "aToB", "amountIn": "10000000" }
+```
+**V2 exactOut:**
+```json
+{ "mode": "exactOut", "sqrtRatioX96": "...", "liquidity": "...", "feeTier": 3000, "direction": "bToA", "amountOut": "800000" }
+```
+
+`direction` — `"aToB"`: selling token0 (pool's lower-address token) for token1. `"bToA"`: selling token1 for token0. Determine from the caller's `from` token: if `from` = pool's `tokenA` → `"aToB"`, else `"bToA"`.
+
+**Output (all modes):**
+```json
+{ "amountOut": "...", "spotPrice": "...", "effectivePrice": "...", "impactPercent": "0.1234" }
+// or amountIn for exactOut
+```
+
+---
+
+### `scripts/audit-log.mjs`
+
+No V1/V2 distinction — handles all phases and both pool types generically.
+
+```bash
+# Append an entry
+echo '{"path":"./audit/...jsonl","entry":{...}}' | node scripts/audit-log.mjs append
+
+# Read latest observation baseline for a pair
+echo '{"path":"./audit/...jsonl","pair":"HBAR/0.0.429274","network":"testnet"}' | node scripts/audit-log.mjs read-snapshot
+```
