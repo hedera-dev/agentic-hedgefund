@@ -1,5 +1,11 @@
-import type { CommandHandlerArgs, CommandResult } from '@hiero-ledger/hiero-cli';
-import { BaseTransactionCommand, TransactionError } from '@hiero-ledger/hiero-cli';
+import type {
+  CommandHandlerArgs,
+  CommandResult,
+} from '@hiero-ledger/hiero-cli';
+import {
+  BaseTransactionCommand,
+  TransactionError,
+} from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import type { SaucerSwapV2SwapOutput } from './output';
 import type {
@@ -102,6 +108,7 @@ export class SaucerSwapV2SwapCommand extends BaseTransactionCommand<
       feeTier: validArgs.feeTier,
       deadlineSeconds: validArgs.deadline,
       gas: validArgs.gas,
+      keyRefIds: [],
       network,
     };
   }

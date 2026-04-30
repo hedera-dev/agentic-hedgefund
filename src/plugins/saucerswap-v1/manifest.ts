@@ -112,6 +112,10 @@ export const saucerswapV1PluginManifest: PluginManifest = {
         schema: SaucerSwapV1DepositOutputSchema,
         humanTemplate: SAUCERSWAP_V1_DEPOSIT_TEMPLATE,
       },
+      registeredHooks: [
+        { hook: 'batchify-set-batch-key', phase: 'preSignTransaction' },
+        { hook: 'batchify-add-transaction', phase: 'preExecuteTransaction' },
+      ],
     },
     {
       name: 'withdraw',
@@ -185,6 +189,10 @@ export const saucerswapV1PluginManifest: PluginManifest = {
         schema: SaucerSwapV1WithdrawOutputSchema,
         humanTemplate: SAUCERSWAP_V1_WITHDRAW_TEMPLATE,
       },
+      registeredHooks: [
+        { hook: 'batchify-set-batch-key', phase: 'preSignTransaction' },
+        { hook: 'batchify-add-transaction', phase: 'preExecuteTransaction' },
+      ],
     },
     {
       name: 'swap',
@@ -260,6 +268,10 @@ export const saucerswapV1PluginManifest: PluginManifest = {
         schema: SaucerSwapV1SwapOutputSchema,
         humanTemplate: SAUCERSWAP_V1_SWAP_TEMPLATE,
       },
+      registeredHooks: [
+        { hook: 'batchify-set-batch-key', phase: 'preSignTransaction' },
+        { hook: 'batchify-add-transaction', phase: 'preExecuteTransaction' },
+      ],
     },
     {
       name: 'buy',
@@ -335,6 +347,10 @@ export const saucerswapV1PluginManifest: PluginManifest = {
         schema: SaucerSwapV1BuyOutputSchema,
         humanTemplate: SAUCERSWAP_V1_BUY_TEMPLATE,
       },
+      registeredHooks: [
+        { hook: 'batchify-set-batch-key', phase: 'preSignTransaction' },
+        { hook: 'batchify-add-transaction', phase: 'preExecuteTransaction' },
+      ],
     },
     {
       name: 'list',

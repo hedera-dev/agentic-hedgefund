@@ -134,6 +134,7 @@ export class SaucerSwapV1BuyCommand extends BaseTransactionCommand<
       amountInMax: rawAmountInMax,
       deadlineSeconds: validArgs.deadline,
       gas: validArgs.gas,
+      keyRefIds: [],
       network,
     };
   }

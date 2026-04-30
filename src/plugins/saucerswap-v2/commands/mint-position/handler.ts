@@ -185,6 +185,7 @@ export class SaucerSwapV2MintPositionCommand extends BaseTransactionCommand<
       recipientEvmAddress: recipient,
       deadlineSeconds: validArgs.deadline,
       gas: validArgs.gas,
+      keyRefIds: [],
       network,
     };
   }
