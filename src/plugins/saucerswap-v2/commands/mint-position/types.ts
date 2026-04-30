@@ -1,11 +1,12 @@
 import type { ContractExecuteTransaction, Transaction } from '@hashgraph/sdk';
 import type {
+  BaseNormalizedParams,
   SupportedNetwork,
   TransactionResult,
 } from '@hiero-ledger/hiero-cli';
 import type { SaucerSwapV2NetworkConfig } from '@/plugins/saucerswap-v2/constants';
 
-export interface SaucerSwapV2MintPositionNormalizedParams {
+export interface SaucerSwapV2MintPositionNormalizedParams extends BaseNormalizedParams {
   config: SaucerSwapV2NetworkConfig;
   token0Evm: string;
   token1Evm: string;

@@ -1,4 +1,7 @@
-import type { CommandHandlerArgs, CommandResult } from '@hiero-ledger/hiero-cli';
+import type {
+  CommandHandlerArgs,
+  CommandResult,
+} from '@hiero-ledger/hiero-cli';
 import {
   BaseTransactionCommand,
   TransactionError,
@@ -126,6 +129,7 @@ export class SaucerSwapV2DecreaseLiquidityCommand extends BaseTransactionCommand
       burn: validArgs.burn,
       deadlineSeconds: validArgs.deadline,
       gas: validArgs.gas,
+      keyRefIds: [],
       network,
     };
   }

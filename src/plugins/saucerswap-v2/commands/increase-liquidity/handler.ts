@@ -134,6 +134,7 @@ export class SaucerSwapV2IncreaseLiquidityCommand extends BaseTransactionCommand
       hbarAmount,
       deadlineSeconds: validArgs.deadline,
       gas: validArgs.gas,
+      keyRefIds: [],
       network,
     };
   }
