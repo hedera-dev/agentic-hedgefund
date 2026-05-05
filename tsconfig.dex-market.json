@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "noEmitOnError": false,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/plugins/dex-market/**/*",
+    "src/core/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "**/__mocks__/**/*",
+    "**/__tests__/**/*"
+  ]
+}
