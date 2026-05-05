@@ -57,5 +57,5 @@ export const DexScreenerSearchResponseSchema = z.object({
 export const DexScreenerPairsResponseSchema = z.object({
   schemaVersion: z.string().optional(),
   pairs: z.array(DexScreenerPairSchema).nullable(),
-  pair: z.record(z.string(), z.unknown()).optional().nullable(),
+  pair: DexScreenerPairSchema.optional().nullable(),
 });

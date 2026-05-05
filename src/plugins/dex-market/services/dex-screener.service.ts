@@ -34,7 +34,7 @@ export class DexScreenerServiceImpl implements DexScreenerService {
     const joined = addresses.join(',');
     const url = `${DEX_SCREENER_BASE_URL}/latest/dex/tokens/${joined}`;
     const raw = await this.fetchWithRetry(url);
-    const parsed = DexScreenerPairsResponseSchema.parse(raw);
+    const parsed = this.parseOrThrow(DexScreenerPairsResponseSchema, raw);
     const pairs = parsed.pairs ?? [];
     return pairs.filter(
       (p) => p.chainId.toLowerCase() === chainId.toLowerCase(),
@@ -47,8 +47,7 @@ export class DexScreenerServiceImpl implements DexScreenerService {
   ): Promise<DexScreenerPair[]> {
     const url = `${DEX_SCREENER_BASE_URL}/token-pairs/v1/${chainId}/${address}`;
     const raw = await this.fetchWithRetry(url);
-    const parsed = z.array(DexScreenerPairSchema).parse(raw);
-    return parsed;
+    return this.parseOrThrow(z.array(DexScreenerPairSchema), raw);
   }
 
   async getPair(
@@ -57,12 +56,9 @@ export class DexScreenerServiceImpl implements DexScreenerService {
   ): Promise<DexScreenerPair> {
     const url = `${DEX_SCREENER_BASE_URL}/latest/dex/pairs/${chainId}/${pairAddress}`;
     const raw = await this.fetchWithRetry(url);
-    const parsed = DexScreenerPairsResponseSchema.parse(raw);
+    const parsed = this.parseOrThrow(DexScreenerPairsResponseSchema, raw);
 
-    const pair =
-      parsed.pair && Object.keys(parsed.pair).length > 0
-        ? (parsed.pair as DexScreenerPair)
-        : (parsed.pairs ?? [])[0];
+    const pair = parsed.pair ?? (parsed.pairs ?? [])[0];
 
     if (!pair) {
       throw new NotFoundError(`Pair ${pairAddress} not found on ${chainId}`, {
@@ -77,9 +73,15 @@ export class DexScreenerServiceImpl implements DexScreenerService {
     const encoded = encodeURIComponent(query);
     const url = `${DEX_SCREENER_BASE_URL}/latest/dex/search?q=${encoded}`;
     const raw = await this.fetchWithRetry(url);
-    const parsed = DexScreenerSearchResponseSchema.parse(raw);
+    const parsed = this.parseOrThrow(DexScreenerSearchResponseSchema, raw);
     const pairs = parsed.pairs ?? [];
     return pairs.filter((p) => p.chainId.toLowerCase() === 'hedera');
+  }
+
+  private parseOrThrow<T>(schema: z.ZodType<T>, raw: unknown): T {
+    const result = schema.safeParse(raw);
+    if (!result.success) throw ValidationError.fromZod(result.error);
+    return result.data;
   }
 
   private async fetchWithRetry(url: string): Promise<unknown> {
