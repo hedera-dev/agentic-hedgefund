@@ -109,6 +109,57 @@ hcli saucerswap-v2 swap --from HBAR --to 0.0.12345 --amount 5 --fee-tier 3000
 
 ---
 
+## Claude Code Skills (Agentic Hedge Fund)
+
+The `skills/` directory contains Claude Code agent skills that drive the Agentic Hedge Fund scenarios. To activate them, copy the skill directories into your Claude Code skills folder.
+
+> **Scope:** use the global path (`~/.claude/skills/` / `%USERPROFILE%\.claude\skills\`) to make skills available in every project, or the project-local path (`.claude/skills/`) to keep them scoped to this repo only. After copying, restart Claude Code so the new skills are picked up.
+
+### Linux
+
+```bash
+# Global
+cp -r skills/* ~/.claude/skills/
+
+# Project-local
+cp -r skills/* .claude/skills/
+```
+
+### macOS
+
+```bash
+# Global
+cp -r skills/* ~/.claude/skills/
+
+# Project-local
+cp -r skills/* .claude/skills/
+```
+
+### Windows (PowerShell)
+
+```powershell
+# Global
+Copy-Item -Recurse skills\* "$env:USERPROFILE\.claude\skills\"
+
+# Project-local
+Copy-Item -Recurse skills\* .claude\skills\
+```
+
+---
+
+### Available Skills
+
+| Skill | Description |
+| --- | --- |
+| `agentic-hedge-fund-saucerswap` | Flow 1 — observe a V1/V2 pool, compute an implied price, and execute a risk-checked swap or buy |
+| `agentic-hedge-fund-rebalance` | Flow 2 — atomic portfolio rebalance (transfer → swap → deposit) via a HIP-551 batch |
+| `agentic-hedge-fund-yield-entry` | Flow 4 entry — discover the deepest liquidity pool for a pair and enter a yield farming position |
+| `agentic-hedge-fund-yield-monitor` | Flow 4 monitor — watch an open LP position for impermanent loss and exit automatically when the threshold is exceeded |
+
+Invoke skills inside Claude Code with `/agentic-hedge-fund-saucerswap`, `/agentic-hedge-fund-rebalance`, etc.
+
+---
+
 ## Repository Layout
 
 ```
