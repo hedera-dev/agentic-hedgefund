@@ -1,32 +1,27 @@
-import type { Command } from '@hiero-ledger/hiero-cli';
 import type {
+  Command,
   CommandHandlerArgs,
   CommandResult,
 } from '@hiero-ledger/hiero-cli';
-import type { MarketQuoteOutput } from './output';
 import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
-import type { TokenAddressResolverService } from '@/plugins/dex-market/utils/token-id-resolver';
+import type { TokenAddressService } from '@/plugins/dex-market/services/token-address.service.interface';
+import type { MarketQuoteOutput } from './output';
 
-import { NotFoundError } from '@hiero-ledger/hiero-cli';
-import { SupportedNetwork } from '@hiero-ledger/hiero-cli';
+import { NotFoundError, SupportedNetwork } from '@hiero-ledger/hiero-cli';
+
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
+import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+import { MirrorNodeServiceImpl } from '@/plugins/dex-market/services/mirror-node.service';
+import { TokenAddressServiceImpl } from '@/plugins/dex-market/services/token-address.service';
 import { formatNumber } from '@/plugins/dex-market/utils/format-number';
 import { findTopLiquidityPair } from '@/plugins/dex-market/utils/pairs';
-import { TokenAddressResolver as DefaultTokenAddressResolver } from '@/plugins/dex-market/utils/token-id-resolver';
-import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
-import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 
 import { MarketQuoteInputSchema } from './input';
-
-function computeWarningLevel(slippagePct: number): 'low' | 'medium' | 'high' {
-  if (slippagePct < 1) return 'low';
-  if (slippagePct <= 5) return 'medium';
-  return 'high';
-}
 
 export class MarketQuoteCommand implements Command {
   constructor(
     private readonly dexScreener: DexScreenerService,
-    private readonly tokenResolver: TokenAddressResolverService,
+    private readonly tokenAddress: TokenAddressService,
   ) {}
 
   async execute(args: CommandHandlerArgs): Promise<CommandResult> {
@@ -34,7 +29,7 @@ export class MarketQuoteCommand implements Command {
     const validArgs = MarketQuoteInputSchema.parse(args.args);
 
     const network = api.network.getCurrentNetwork();
-    const evmAddress = await this.tokenResolver.resolveToEvmAddress(
+    const evmAddress = await this.tokenAddress.resolveEvmAddress(
       validArgs.token,
       network,
     );
@@ -50,7 +45,13 @@ export class MarketQuoteCommand implements Command {
       );
     }
 
-    const topPool = findTopLiquidityPair(pairs)!;
+    const topPool = findTopLiquidityPair(pairs);
+    if (!topPool) {
+      throw new NotFoundError(
+        `No liquidity data for token ${validArgs.token}`,
+        { context: { token: validArgs.token, evmAddress } },
+      );
+    }
 
     const liquidityUsd = topPool.liquidity?.usd;
     if (liquidityUsd === undefined) {
@@ -65,7 +66,7 @@ export class MarketQuoteCommand implements Command {
     // Constant product (Uniswap V2 x*y=k) approximation; not a router-grade quote.
     const estimatedSlippagePct = (sizeUsd / (liquidityUsd + sizeUsd)) * 100;
 
-    const warningLevel = computeWarningLevel(estimatedSlippagePct);
+    const warningLevel = this.computeWarningLevel(estimatedSlippagePct);
 
     const outputData: MarketQuoteOutput = {
       network,
@@ -88,15 +89,19 @@ export class MarketQuoteCommand implements Command {
 
     return { result: outputData };
   }
+
+  private computeWarningLevel(slippagePct: number): 'low' | 'medium' | 'high' {
+    if (slippagePct < 1) return 'low';
+    if (slippagePct <= 5) return 'medium';
+    return 'high';
+  }
 }
 
 export async function marketQuote(
   args: CommandHandlerArgs,
-  dexScreenerService?: DexScreenerService,
-  tokenResolver?: TokenAddressResolverService,
 ): Promise<CommandResult> {
-  const dexScreener =
-    dexScreenerService ?? new DexScreenerServiceImpl(args.logger);
-  const resolver = tokenResolver ?? new DefaultTokenAddressResolver();
-  return new MarketQuoteCommand(dexScreener, resolver).execute(args);
+  const dexScreener = new DexScreenerServiceImpl(args.logger);
+  const mirrorNode = new MirrorNodeServiceImpl();
+  const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
+  return new MarketQuoteCommand(dexScreener, tokenAddress).execute(args);
 }

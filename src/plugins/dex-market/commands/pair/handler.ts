@@ -1,15 +1,16 @@
-import type { Command } from '@hiero-ledger/hiero-cli';
 import type {
+  Command,
   CommandHandlerArgs,
   CommandResult,
 } from '@hiero-ledger/hiero-cli';
-import type { MarketPairOutput } from './output';
 import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
+import type { MarketPairOutput } from './output';
 
 import { SupportedNetwork } from '@hiero-ledger/hiero-cli';
-import { formatNumber } from '@/plugins/dex-market/utils/format-number';
-import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+
 import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
+import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+import { formatNumber } from '@/plugins/dex-market/utils/format-number';
 
 import { MarketPairInputSchema } from './input';
 
@@ -58,9 +59,7 @@ export class MarketPairCommand implements Command {
 
 export async function marketPair(
   args: CommandHandlerArgs,
-  dexScreenerService?: DexScreenerService,
 ): Promise<CommandResult> {
-  const dexScreener =
-    dexScreenerService ?? new DexScreenerServiceImpl(args.logger);
+  const dexScreener = new DexScreenerServiceImpl(args.logger);
   return new MarketPairCommand(dexScreener).execute(args);
 }

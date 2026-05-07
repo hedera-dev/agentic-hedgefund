@@ -1,13 +1,13 @@
-import { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
+import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
 
-import { assertOutput } from '@/plugins/dex-market/__tests__/utils/assert-output';
 import {
   fixtureHbarPair,
   fixtureSaucePair,
 } from '@/plugins/dex-market/__tests__/helpers/fixtures';
 import { makeMarketCommandArgs } from '@/plugins/dex-market/__tests__/helpers/mocks';
+import { assertOutput } from '@/plugins/dex-market/__tests__/utils/assert-output';
 import {
-  marketSearch,
+  MarketSearchCommand,
   MarketSearchOutputSchema,
 } from '@/plugins/dex-market/commands/search';
 
@@ -20,10 +20,9 @@ describe('market search', () => {
       args: { query: 'SAUCE' },
     });
 
-    const result = await marketSearch(
-      args,
+    const result = await new MarketSearchCommand(
       dexScreener as unknown as DexScreenerService,
-    );
+    ).execute(args);
 
     expect(dexScreener.search).toHaveBeenCalledWith('SAUCE');
 
@@ -41,10 +40,9 @@ describe('market search', () => {
       args: { query: 'SAUCE', limit: 1 },
     });
 
-    const result = await marketSearch(
-      args,
+    const result = await new MarketSearchCommand(
       dexScreener as unknown as DexScreenerService,
-    );
+    ).execute(args);
     const output = assertOutput(result.result, MarketSearchOutputSchema);
     expect(output.limit).toBe(1);
     expect(output.totalCount).toBe(2);
@@ -59,10 +57,9 @@ describe('market search', () => {
       args: { query: 'XYZUNKNOWN' },
     });
 
-    const result = await marketSearch(
-      args,
+    const result = await new MarketSearchCommand(
       dexScreener as unknown as DexScreenerService,
-    );
+    ).execute(args);
     const output = assertOutput(result.result, MarketSearchOutputSchema);
     expect(output.pairs).toEqual([]);
     expect(output.totalCount).toBe(0);

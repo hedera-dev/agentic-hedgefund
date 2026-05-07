@@ -1,26 +1,27 @@
-import type { Command } from '@hiero-ledger/hiero-cli';
 import type {
+  Command,
   CommandHandlerArgs,
   CommandResult,
 } from '@hiero-ledger/hiero-cli';
-import type { MarketPoolsOutput } from './output';
 import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
-import type { TokenAddressResolverService } from '@/plugins/dex-market/utils/token-id-resolver';
+import type { TokenAddressService } from '@/plugins/dex-market/services/token-address.service.interface';
+import type { MarketPoolsOutput } from './output';
 
-import { NotFoundError } from '@hiero-ledger/hiero-cli';
-import { SupportedNetwork } from '@hiero-ledger/hiero-cli';
+import { NotFoundError, SupportedNetwork } from '@hiero-ledger/hiero-cli';
+
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
+import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+import { MirrorNodeServiceImpl } from '@/plugins/dex-market/services/mirror-node.service';
+import { TokenAddressServiceImpl } from '@/plugins/dex-market/services/token-address.service';
 import { formatNumber } from '@/plugins/dex-market/utils/format-number';
 import { sortByLiquidityDesc } from '@/plugins/dex-market/utils/pairs';
-import { TokenAddressResolver as DefaultTokenAddressResolver } from '@/plugins/dex-market/utils/token-id-resolver';
-import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
-import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 
 import { MarketPoolsInputSchema } from './input';
 
 export class MarketPoolsCommand implements Command {
   constructor(
     private readonly dexScreener: DexScreenerService,
-    private readonly tokenResolver: TokenAddressResolverService,
+    private readonly tokenAddress: TokenAddressService,
   ) {}
 
   async execute(args: CommandHandlerArgs): Promise<CommandResult> {
@@ -28,7 +29,7 @@ export class MarketPoolsCommand implements Command {
     const validArgs = MarketPoolsInputSchema.parse(args.args);
 
     const network = api.network.getCurrentNetwork();
-    const evmAddress = await this.tokenResolver.resolveToEvmAddress(
+    const evmAddress = await this.tokenAddress.resolveEvmAddress(
       validArgs.token,
       network,
     );
@@ -86,11 +87,9 @@ export class MarketPoolsCommand implements Command {
 
 export async function marketPools(
   args: CommandHandlerArgs,
-  dexScreenerService?: DexScreenerService,
-  tokenResolver?: TokenAddressResolverService,
 ): Promise<CommandResult> {
-  const dexScreener =
-    dexScreenerService ?? new DexScreenerServiceImpl(args.logger);
-  const resolver = tokenResolver ?? new DefaultTokenAddressResolver();
-  return new MarketPoolsCommand(dexScreener, resolver).execute(args);
+  const dexScreener = new DexScreenerServiceImpl(args.logger);
+  const mirrorNode = new MirrorNodeServiceImpl();
+  const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
+  return new MarketPoolsCommand(dexScreener, tokenAddress).execute(args);
 }

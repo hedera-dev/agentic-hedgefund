@@ -1,44 +1,28 @@
-import type { Command } from '@hiero-ledger/hiero-cli';
 import type {
+  Command,
   CommandHandlerArgs,
   CommandResult,
 } from '@hiero-ledger/hiero-cli';
-import type { DexScreenerPair } from '@/plugins/dex-market/services/dex-screener-types';
-import type { MarketPriceOutput } from './output';
 import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
-import type { TokenAddressResolverService } from '@/plugins/dex-market/utils/token-id-resolver';
+import type { DexScreenerPair } from '@/plugins/dex-market/services/dex-screener-types';
+import type { TokenAddressService } from '@/plugins/dex-market/services/token-address.service.interface';
+import type { MarketPriceOutput } from './output';
 
-import { NotFoundError } from '@hiero-ledger/hiero-cli';
-import { SupportedNetwork } from '@hiero-ledger/hiero-cli';
+import { NotFoundError, SupportedNetwork } from '@hiero-ledger/hiero-cli';
+
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
+import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+import { MirrorNodeServiceImpl } from '@/plugins/dex-market/services/mirror-node.service';
+import { TokenAddressServiceImpl } from '@/plugins/dex-market/services/token-address.service';
 import { formatNumber } from '@/plugins/dex-market/utils/format-number';
 import { findTopLiquidityPair } from '@/plugins/dex-market/utils/pairs';
-import { TokenAddressResolver as DefaultTokenAddressResolver } from '@/plugins/dex-market/utils/token-id-resolver';
-import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
-import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 
 import { MarketPriceInputSchema } from './input';
-
-function findTopPairForToken(
-  pairs: DexScreenerPair[],
-  evmAddress: string,
-): DexScreenerPair | undefined {
-  const tokenPairs = pairs.filter(
-    (p) =>
-      p.baseToken.address.toLowerCase() === evmAddress ||
-      p.quoteToken.address.toLowerCase() === evmAddress,
-  );
-
-  if (tokenPairs.length === 0) {
-    return undefined;
-  }
-
-  return findTopLiquidityPair(tokenPairs);
-}
 
 export class MarketPriceCommand implements Command {
   constructor(
     private readonly dexScreener: DexScreenerService,
-    private readonly tokenResolver: TokenAddressResolverService,
+    private readonly tokenAddress: TokenAddressService,
   ) {}
 
   async execute(args: CommandHandlerArgs): Promise<CommandResult> {
@@ -48,7 +32,7 @@ export class MarketPriceCommand implements Command {
     const network = api.network.getCurrentNetwork();
     const evmAddresses = await Promise.all(
       validArgs.token.map((token) =>
-        this.tokenResolver.resolveToEvmAddress(token, network),
+        this.tokenAddress.resolveEvmAddress(token, network),
       ),
     );
     const pairs = await this.dexScreener.getTokens(
@@ -58,7 +42,7 @@ export class MarketPriceCommand implements Command {
 
     const items = validArgs.token.map((input, index) => {
       const evmAddress = evmAddresses[index];
-      const topPair = findTopPairForToken(pairs, evmAddress);
+      const topPair = this.findTopPairForToken(pairs, evmAddress);
 
       if (!topPair) {
         return {
@@ -110,15 +94,30 @@ export class MarketPriceCommand implements Command {
 
     return { result: outputData };
   }
+
+  private findTopPairForToken(
+    pairs: DexScreenerPair[],
+    evmAddress: string,
+  ): DexScreenerPair | undefined {
+    const tokenPairs = pairs.filter(
+      (p) =>
+        p.baseToken.address.toLowerCase() === evmAddress ||
+        p.quoteToken.address.toLowerCase() === evmAddress,
+    );
+
+    if (tokenPairs.length === 0) {
+      return undefined;
+    }
+
+    return findTopLiquidityPair(tokenPairs);
+  }
 }
 
 export async function marketPrice(
   args: CommandHandlerArgs,
-  dexScreenerService?: DexScreenerService,
-  tokenResolver?: TokenAddressResolverService,
 ): Promise<CommandResult> {
-  const dexScreener =
-    dexScreenerService ?? new DexScreenerServiceImpl(args.logger);
-  const resolver = tokenResolver ?? new DefaultTokenAddressResolver();
-  return new MarketPriceCommand(dexScreener, resolver).execute(args);
+  const dexScreener = new DexScreenerServiceImpl(args.logger);
+  const mirrorNode = new MirrorNodeServiceImpl();
+  const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
+  return new MarketPriceCommand(dexScreener, tokenAddress).execute(args);
 }

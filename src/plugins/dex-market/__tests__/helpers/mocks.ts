@@ -11,11 +11,11 @@ export function makeLogger() {
   };
 }
 
-export function makeTokenAddressResolver(
+export function makeTokenAddressService(
   evmAddress: string | Record<string, string>,
 ) {
   return {
-    resolveToEvmAddress: jest.fn((input: string) =>
+    resolveEvmAddress: jest.fn((input: string) =>
       Promise.resolve(
         typeof evmAddress === 'string' ? evmAddress : evmAddress[input],
       ),

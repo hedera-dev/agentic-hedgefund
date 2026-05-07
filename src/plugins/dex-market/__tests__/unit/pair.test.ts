@@ -1,14 +1,15 @@
-import { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
+import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
 
-import { assertOutput } from '@/plugins/dex-market/__tests__/utils/assert-output';
 import { NotFoundError } from '@hiero-ledger/hiero-cli';
-import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
+
 import { fixtureSaucePair } from '@/plugins/dex-market/__tests__/helpers/fixtures';
 import { makeMarketCommandArgs } from '@/plugins/dex-market/__tests__/helpers/mocks';
+import { assertOutput } from '@/plugins/dex-market/__tests__/utils/assert-output';
 import {
-  marketPair,
+  MarketPairCommand,
   MarketPairOutputSchema,
 } from '@/plugins/dex-market/commands/pair';
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 
 describe('market pair', () => {
   test('returns pair details', async () => {
@@ -19,10 +20,9 @@ describe('market pair', () => {
       args: { pair: '0x4A46705176faC8Fd5C8061F94A2C44416e7B20e6' },
     });
 
-    const result = await marketPair(
-      args,
+    const result = await new MarketPairCommand(
       dexScreener as unknown as DexScreenerService,
-    );
+    ).execute(args);
 
     expect(dexScreener.getPair).toHaveBeenCalledWith(
       DEX_SCREENER_HEDERA_CHAIN_ID,
@@ -43,7 +43,9 @@ describe('market pair', () => {
     });
 
     await expect(
-      marketPair(args, dexScreener as unknown as DexScreenerService),
+      new MarketPairCommand(
+        dexScreener as unknown as DexScreenerService,
+      ).execute(args),
     ).rejects.toThrow(NotFoundError);
   });
 });

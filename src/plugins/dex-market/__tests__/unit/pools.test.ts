@@ -1,7 +1,8 @@
-import { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
+import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
+import type { TokenAddressService } from '@/plugins/dex-market/services/token-address.service.interface';
 
-import { assertOutput } from '@/plugins/dex-market/__tests__/utils/assert-output';
 import { NotFoundError } from '@hiero-ledger/hiero-cli';
+
 import {
   fixtureSaucePair,
   fixtureSaucePairV2,
@@ -9,15 +10,16 @@ import {
   SAUCE_TOKEN_ID,
   UNKNOWN_TOKEN_ID,
 } from '@/plugins/dex-market/__tests__/helpers/fixtures';
-import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 import {
   makeMarketCommandArgs,
-  makeTokenAddressResolver,
+  makeTokenAddressService,
 } from '@/plugins/dex-market/__tests__/helpers/mocks';
+import { assertOutput } from '@/plugins/dex-market/__tests__/utils/assert-output';
 import {
-  marketPools,
+  MarketPoolsCommand,
   MarketPoolsOutputSchema,
 } from '@/plugins/dex-market/commands/pools';
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 
 describe('market pools', () => {
   test('returns pools sorted by liquidity descending', async () => {
@@ -26,16 +28,15 @@ describe('market pools', () => {
         .fn()
         .mockResolvedValue([fixtureSaucePair, fixtureSaucePairV2]),
     };
-    const tokenResolver = makeTokenAddressResolver(SAUCE_EVM_ADDRESS);
+    const tokenAddress = makeTokenAddressService(SAUCE_EVM_ADDRESS);
     const args = makeMarketCommandArgs({
       args: { token: SAUCE_TOKEN_ID },
     });
 
-    const result = await marketPools(
-      args,
+    const result = await new MarketPoolsCommand(
       dexScreener as unknown as DexScreenerService,
-      tokenResolver,
-    );
+      tokenAddress as unknown as TokenAddressService,
+    ).execute(args);
 
     expect(dexScreener.getTokenPairs).toHaveBeenCalledWith(
       DEX_SCREENER_HEDERA_CHAIN_ID,
@@ -55,16 +56,15 @@ describe('market pools', () => {
         .fn()
         .mockResolvedValue([fixtureSaucePair, fixtureSaucePairV2]),
     };
-    const tokenResolver = makeTokenAddressResolver(SAUCE_EVM_ADDRESS);
+    const tokenAddress = makeTokenAddressService(SAUCE_EVM_ADDRESS);
     const args = makeMarketCommandArgs({
       args: { token: SAUCE_TOKEN_ID, limit: 1 },
     });
 
-    const result = await marketPools(
-      args,
+    const result = await new MarketPoolsCommand(
       dexScreener as unknown as DexScreenerService,
-      tokenResolver,
-    );
+      tokenAddress as unknown as TokenAddressService,
+    ).execute(args);
     const output = assertOutput(result.result, MarketPoolsOutputSchema);
     expect(output.limit).toBe(1);
     expect(output.returnedCount).toBe(1);
@@ -75,17 +75,16 @@ describe('market pools', () => {
     const dexScreener = {
       getTokenPairs: jest.fn().mockResolvedValue([]),
     };
-    const tokenResolver = makeTokenAddressResolver(SAUCE_EVM_ADDRESS);
+    const tokenAddress = makeTokenAddressService(SAUCE_EVM_ADDRESS);
     const args = makeMarketCommandArgs({
       args: { token: UNKNOWN_TOKEN_ID },
     });
 
     await expect(
-      marketPools(
-        args,
+      new MarketPoolsCommand(
         dexScreener as unknown as DexScreenerService,
-        tokenResolver,
-      ),
+        tokenAddress as unknown as TokenAddressService,
+      ).execute(args),
     ).rejects.toThrow(NotFoundError);
   });
 });

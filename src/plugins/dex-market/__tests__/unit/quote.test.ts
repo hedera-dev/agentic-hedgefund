@@ -1,7 +1,8 @@
-import { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
+import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
+import type { TokenAddressService } from '@/plugins/dex-market/services/token-address.service.interface';
 
-import { assertOutput } from '@/plugins/dex-market/__tests__/utils/assert-output';
 import { NotFoundError } from '@hiero-ledger/hiero-cli';
+
 import {
   fixtureSaucePair,
   SAUCE_EVM_ADDRESS,
@@ -10,10 +11,11 @@ import {
 } from '@/plugins/dex-market/__tests__/helpers/fixtures';
 import {
   makeMarketCommandArgs,
-  makeTokenAddressResolver,
+  makeTokenAddressService,
 } from '@/plugins/dex-market/__tests__/helpers/mocks';
+import { assertOutput } from '@/plugins/dex-market/__tests__/utils/assert-output';
 import {
-  marketQuote,
+  MarketQuoteCommand,
   MarketQuoteOutputSchema,
 } from '@/plugins/dex-market/commands/quote';
 
@@ -22,16 +24,15 @@ describe('market quote', () => {
     const dexScreener = {
       getTokenPairs: jest.fn().mockResolvedValue([fixtureSaucePair]),
     };
-    const tokenResolver = makeTokenAddressResolver(SAUCE_EVM_ADDRESS);
+    const tokenAddress = makeTokenAddressService(SAUCE_EVM_ADDRESS);
     const args = makeMarketCommandArgs({
       args: { token: SAUCE_TOKEN_ID, size: 100 },
     });
 
-    const result = await marketQuote(
-      args,
+    const result = await new MarketQuoteCommand(
       dexScreener as unknown as DexScreenerService,
-      tokenResolver,
-    );
+      tokenAddress as unknown as TokenAddressService,
+    ).execute(args);
 
     const output = assertOutput(result.result, MarketQuoteOutputSchema);
     expect(output.warningLevel).toBe('low');
@@ -45,16 +46,15 @@ describe('market quote', () => {
     const dexScreener = {
       getTokenPairs: jest.fn().mockResolvedValue([fixtureSaucePair]),
     };
-    const tokenResolver = makeTokenAddressResolver(SAUCE_EVM_ADDRESS);
+    const tokenAddress = makeTokenAddressService(SAUCE_EVM_ADDRESS);
     const args = makeMarketCommandArgs({
       args: { token: SAUCE_TOKEN_ID, size: 1_000_000 },
     });
 
-    const result = await marketQuote(
-      args,
+    const result = await new MarketQuoteCommand(
       dexScreener as unknown as DexScreenerService,
-      tokenResolver,
-    );
+      tokenAddress as unknown as TokenAddressService,
+    ).execute(args);
 
     const output = assertOutput(result.result, MarketQuoteOutputSchema);
     expect(output.warningLevel).toBe('high');
@@ -65,17 +65,16 @@ describe('market quote', () => {
     const dexScreener = {
       getTokenPairs: jest.fn().mockResolvedValue([]),
     };
-    const tokenResolver = makeTokenAddressResolver(SAUCE_EVM_ADDRESS);
+    const tokenAddress = makeTokenAddressService(SAUCE_EVM_ADDRESS);
     const args = makeMarketCommandArgs({
       args: { token: UNKNOWN_TOKEN_ID, size: 100 },
     });
 
     await expect(
-      marketQuote(
-        args,
+      new MarketQuoteCommand(
         dexScreener as unknown as DexScreenerService,
-        tokenResolver,
-      ),
+        tokenAddress as unknown as TokenAddressService,
+      ).execute(args),
     ).rejects.toThrow(NotFoundError);
   });
 });

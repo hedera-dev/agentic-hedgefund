@@ -1,26 +1,31 @@
-import type { Command } from '@hiero-ledger/hiero-cli';
 import type {
+  Command,
   CommandHandlerArgs,
   CommandResult,
 } from '@hiero-ledger/hiero-cli';
-import type { MarketLiquidityOutput } from './output';
 import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
-import type { TokenAddressResolverService } from '@/plugins/dex-market/utils/token-id-resolver';
+import type { TokenAddressService } from '@/plugins/dex-market/services/token-address.service.interface';
+import type { MarketLiquidityOutput } from './output';
 
-import { NotFoundError, StateError } from '@hiero-ledger/hiero-cli';
-import { SupportedNetwork } from '@hiero-ledger/hiero-cli';
+import {
+  NotFoundError,
+  StateError,
+  SupportedNetwork,
+} from '@hiero-ledger/hiero-cli';
+
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
+import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+import { MirrorNodeServiceImpl } from '@/plugins/dex-market/services/mirror-node.service';
+import { TokenAddressServiceImpl } from '@/plugins/dex-market/services/token-address.service';
 import { formatNumber } from '@/plugins/dex-market/utils/format-number';
 import { findTopLiquidityPair } from '@/plugins/dex-market/utils/pairs';
-import { TokenAddressResolver as DefaultTokenAddressResolver } from '@/plugins/dex-market/utils/token-id-resolver';
-import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
-import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 
 import { MarketLiquidityInputSchema } from './input';
 
 export class MarketLiquidityCommand implements Command {
   constructor(
     private readonly dexScreener: DexScreenerService,
-    private readonly tokenResolver: TokenAddressResolverService,
+    private readonly tokenAddress: TokenAddressService,
   ) {}
 
   async execute(args: CommandHandlerArgs): Promise<CommandResult> {
@@ -28,7 +33,7 @@ export class MarketLiquidityCommand implements Command {
     const validArgs = MarketLiquidityInputSchema.parse(args.args);
 
     const network = api.network.getCurrentNetwork();
-    const evmAddress = await this.tokenResolver.resolveToEvmAddress(
+    const evmAddress = await this.tokenAddress.resolveEvmAddress(
       validArgs.token,
       network,
     );
@@ -92,11 +97,9 @@ export class MarketLiquidityCommand implements Command {
 
 export async function marketLiquidity(
   args: CommandHandlerArgs,
-  dexScreenerService?: DexScreenerService,
-  tokenResolver?: TokenAddressResolverService,
 ): Promise<CommandResult> {
-  const dexScreener =
-    dexScreenerService ?? new DexScreenerServiceImpl(args.logger);
-  const resolver = tokenResolver ?? new DefaultTokenAddressResolver();
-  return new MarketLiquidityCommand(dexScreener, resolver).execute(args);
+  const dexScreener = new DexScreenerServiceImpl(args.logger);
+  const mirrorNode = new MirrorNodeServiceImpl();
+  const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
+  return new MarketLiquidityCommand(dexScreener, tokenAddress).execute(args);
 }
