@@ -14,12 +14,12 @@ import type {
   SaucerSwapV1WithdrawSignTransactionResult,
 } from './types';
 
-import { ContractFunctionParameters } from '@hashgraph/sdk';
 import {
   BaseTransactionCommand,
   TransactionError,
   ValidationError,
 } from '@hiero-ledger/hiero-cli';
+import { ContractFunctionParameters } from '@hiero-ledger/sdk';
 
 import {
   getSaucerSwapV1Config,

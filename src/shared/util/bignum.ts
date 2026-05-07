@@ -1,4 +1,4 @@
-import type SdkBigNumberType from '@hashgraph/sdk/node_modules/bignumber.js';
+import type SdkBigNumberType from 'bignumber.js';
 
 /**
  * The SDK's convertToBigNumber does an `instanceof` check against its own
