@@ -4,5 +4,5 @@ export interface MirrorNodeToken {
 }
 
 export interface MirrorNodeService {
-  getToken(tokenId: string, network: string): Promise<MirrorNodeToken>;
+  getToken(tokenReference: string, network: string): Promise<MirrorNodeToken>;
 }

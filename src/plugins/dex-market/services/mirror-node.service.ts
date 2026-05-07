@@ -24,7 +24,10 @@ const MirrorNodeTokenSchema = z.object({
 });
 
 export class MirrorNodeServiceImpl implements MirrorNodeService {
-  async getToken(tokenId: string, network: string): Promise<MirrorNodeToken> {
+  async getToken(
+    tokenReference: string,
+    network: string,
+  ): Promise<MirrorNodeToken> {
     const baseUrl = MIRROR_NODE_URLS[network];
     if (!baseUrl) {
       throw new ValidationError(
@@ -32,9 +35,11 @@ export class MirrorNodeServiceImpl implements MirrorNodeService {
       );
     }
 
+    const trimmedReference = tokenReference.trim();
+    const pathReference = this.normalizeTokenReferenceForPath(trimmedReference);
     const raw = await this.fetchToken(
-      `${baseUrl}/api/v1/tokens/${tokenId}`,
-      tokenId,
+      `${baseUrl}/api/v1/tokens/${pathReference}`,
+      trimmedReference,
     );
     const parsed = MirrorNodeTokenSchema.safeParse(raw);
     if (!parsed.success) {
@@ -44,7 +49,18 @@ export class MirrorNodeServiceImpl implements MirrorNodeService {
     return parsed.data;
   }
 
-  private async fetchToken(url: string, tokenId: string): Promise<unknown> {
+  private normalizeTokenReferenceForPath(tokenReference: string): string {
+    if (tokenReference.toLowerCase().startsWith('0x')) {
+      return tokenReference.slice(2);
+    }
+
+    return tokenReference;
+  }
+
+  private async fetchToken(
+    url: string,
+    tokenReference: string,
+  ): Promise<unknown> {
     const controller = new AbortController();
     const timeoutId = setTimeout(
       () => controller.abort(),
@@ -55,9 +71,16 @@ export class MirrorNodeServiceImpl implements MirrorNodeService {
       const response = await fetch(url, { signal: controller.signal });
 
       if (response.status === 404) {
-        throw new NotFoundError(`Token ${tokenId} not found on Mirror Node`, {
-          context: { tokenId },
-        });
+        throw new NotFoundError(
+          `Token ${tokenReference} not found on Mirror Node`,
+          { context: { tokenReference } },
+        );
+      }
+
+      if (response.status === 400) {
+        throw new ValidationError(
+          `Invalid token reference '${tokenReference}' for Mirror Node.`,
+        );
       }
 
       if (!response.ok) {
@@ -69,7 +92,11 @@ export class MirrorNodeServiceImpl implements MirrorNodeService {
 
       return await response.json();
     } catch (error) {
-      if (error instanceof NotFoundError || error instanceof NetworkError) {
+      if (
+        error instanceof NotFoundError ||
+        error instanceof NetworkError ||
+        error instanceof ValidationError
+      ) {
         throw error;
       }
 

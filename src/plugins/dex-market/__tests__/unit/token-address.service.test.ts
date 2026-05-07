@@ -27,19 +27,20 @@ describe('TokenAddressServiceImpl', () => {
     expect(mirrorNode.getToken).toHaveBeenCalledWith(SAUCE_TOKEN_ID, 'mainnet');
   });
 
-  test('0x address lowercases without Mirror Node', async () => {
+  test('0x address resolves through Mirror Node evm_address', async () => {
     const mirrorNode: MirrorNodeService = {
-      getToken: jest.fn(),
+      getToken: jest.fn().mockResolvedValue({
+        token_id: SAUCE_TOKEN_ID,
+        evm_address: '0xAbCdEf1234567890AbCdEf1234567890AbCdEf12',
+      }),
     };
     const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
+    const input = '0xAbCdEf1234567890AbCdEf1234567890AbCdEf12';
 
-    const result = await tokenAddress.resolveEvmAddress(
-      '0xAbCdEf1234567890AbCdEf1234567890AbCdEf12',
-      'mainnet',
-    );
+    const result = await tokenAddress.resolveEvmAddress(input, 'mainnet');
 
     expect(result).toBe('0xabcdef1234567890abcdef1234567890abcdef12');
-    expect(mirrorNode.getToken).not.toHaveBeenCalled();
+    expect(mirrorNode.getToken).toHaveBeenCalledWith(input, 'mainnet');
   });
 
   test('trims whitespace', async () => {
@@ -57,11 +58,14 @@ describe('TokenAddressServiceImpl', () => {
     );
 
     expect(result).toBe(SAUCE_EVM_ADDRESS);
+    expect(mirrorNode.getToken).toHaveBeenCalledWith(SAUCE_TOKEN_ID, 'mainnet');
   });
 
   test('invalid input throws ValidationError', async () => {
     const mirrorNode: MirrorNodeService = {
-      getToken: jest.fn(),
+      getToken: jest
+        .fn()
+        .mockRejectedValue(new ValidationError('Invalid token reference')),
     };
     const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
 
@@ -72,7 +76,9 @@ describe('TokenAddressServiceImpl', () => {
 
   test('empty string throws ValidationError', async () => {
     const mirrorNode: MirrorNodeService = {
-      getToken: jest.fn(),
+      getToken: jest
+        .fn()
+        .mockRejectedValue(new ValidationError('Invalid token reference')),
     };
     const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
 
@@ -86,6 +92,20 @@ describe('TokenAddressServiceImpl', () => {
       getToken: jest.fn().mockResolvedValue({
         token_id: SAUCE_TOKEN_ID,
         evm_address: null,
+      }),
+    };
+    const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
+
+    await expect(
+      tokenAddress.resolveEvmAddress(SAUCE_TOKEN_ID, 'mainnet'),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  test('empty Mirror Node evm_address throws ValidationError', async () => {
+    const mirrorNode: MirrorNodeService = {
+      getToken: jest.fn().mockResolvedValue({
+        token_id: SAUCE_TOKEN_ID,
+        evm_address: '',
       }),
     };
     const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
