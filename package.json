@@ -18,7 +18,7 @@
     "test": "npm run test:unit"
   },
   "dependencies": {
-    "@hiero-ledger/hiero-cli": "file:../hedera-cli-fork/hiero-ledger-hiero-cli-0.13.0.tgz",
+    "@hiero-ledger/hiero-cli": "file:../hedera-cli-fork/hiero-ledger-hiero-cli-1.0.0.tgz",
     "zod": "4.3.6"
   },
   "devDependencies": {

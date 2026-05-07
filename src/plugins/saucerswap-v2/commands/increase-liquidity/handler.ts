@@ -2,6 +2,7 @@ import type {
   CommandHandlerArgs,
   CommandResult,
 } from '@hiero-ledger/hiero-cli';
+import type { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
 import type { SaucerSwapV2IncreaseLiquidityOutput } from './output';
 import type {
   SaucerSwapV2IncreaseLiquidityBuildResult,
@@ -11,24 +12,25 @@ import type {
 } from './types';
 
 import {
-  ContractExecuteTransaction,
-  ContractId,
-  Hbar,
-  HbarUnit,
-} from '@hashgraph/sdk';
-import {
   BaseTransactionCommand,
   EntityReferenceType,
   HBAR_DECIMALS,
   TransactionError,
   ValidationError,
 } from '@hiero-ledger/hiero-cli';
+import {
+  ContractExecuteTransaction,
+  ContractId,
+  Hbar,
+  HbarUnit,
+} from '@hiero-ledger/sdk';
 import { Interface } from 'ethers';
 
 import { NFT_POSITION_MANAGER_ABI } from '@/plugins/saucerswap-v2/abi/nft-position-manager';
 import { getSaucerSwapV2Config } from '@/plugins/saucerswap-v2/constants';
 import { encodeContractCall } from '@/plugins/saucerswap-v2/utils/abi-encoder';
 import { encodeMulticall } from '@/plugins/saucerswap-v2/utils/multicall';
+import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 import { toBigNumber } from '@/shared/util/bignum';
 import { computeDeadline } from '@/shared/util/deadline';
 import { computeMinOutput } from '@/shared/util/slippage';
@@ -38,8 +40,6 @@ import {
 } from '@/shared/util/token-balance-input';
 
 import { SaucerSwapV2IncreaseLiquidityInputSchema } from './input';
-import { SaucerSwapHelperService } from '@/shared/services/saucerswap-helper/saucerswap-helper-service.interface';
-import { SaucerSwapHelperServiceImpl } from '@/shared/services/saucerswap-helper/saucerswap-helper-service';
 
 export const SAUCERSWAP_V2_INCREASE_LIQUIDITY_COMMAND_NAME =
   'saucerswap-v2_increase-liquidity';

@@ -8,14 +8,14 @@ A reference demo that extends [hiero-ledger/hiero-cli](https://github.com/hiero-
 
 Wraps the SaucerSwap V1 (Uniswap V2-style constant-product AMM) contracts and REST API. Tokens are resolved as Hedera entity references (ID, alias, EVM address, or `HBAR`). Amounts accept display units or raw base units with a `t` suffix.
 
-| Command    | Summary                                              |
-| ---------- | ---------------------------------------------------- |
-| `deposit`  | Add liquidity to an existing V1 pool                 |
-| `withdraw` | Remove liquidity from a V1 pool                      |
-| `swap`     | Swap exact input for at least a minimum output       |
-| `buy`      | Swap up to a maximum input for an exact output       |
-| `list`     | List V1 pools from the SaucerSwap REST API           |
-| `view`     | Show reserves and metadata for a specific V1 pool    |
+| Command    | Summary                                           |
+| ---------- | ------------------------------------------------- |
+| `deposit`  | Add liquidity to an existing V1 pool              |
+| `withdraw` | Remove liquidity from a V1 pool                   |
+| `swap`     | Swap exact input for at least a minimum output    |
+| `buy`      | Swap up to a maximum input for an exact output    |
+| `list`     | List V1 pools from the SaucerSwap REST API        |
+| `view`     | Show reserves and metadata for a specific V1 pool |
 
 Read-only commands (`list`, `view`) require a `--api-key` (SaucerSwap `x-api-key` header).
 
@@ -27,17 +27,17 @@ See [ADR-001](docs/adr/ADR-001-saucerswap-v1-dex-plugin.md) for full design deci
 
 Wraps the SaucerSwap V2 (Uniswap V3-style) contracts. Positions are NFT-based; swaps are routed through fee-tiered pools. Parameters are ABI-encoded and submitted via multicall.
 
-| Command               | Summary                                                     |
-| --------------------- | ----------------------------------------------------------- |
-| `swap`                | Swap exact input for a minimum output on a V2 pool          |
-| `buy`                 | Swap up to a maximum input for an exact output (V2)         |
-| `mint-position`       | Create a new concentrated liquidity position (NFT)          |
-| `increase-liquidity`  | Add liquidity to an existing V2 position                    |
-| `decrease-liquidity`  | Remove liquidity from a V2 position                         |
-| `collect-fees`        | Collect accrued swap fees from a V2 position                |
-| `list-pools`          | List V2 pools from the SaucerSwap REST API                  |
-| `view-pool`           | Resolve and enrich a specific V2 pool                       |
-| `list-positions`      | List V2 NFT positions held by an account                    |
+| Command              | Summary                                             |
+| -------------------- | --------------------------------------------------- |
+| `swap`               | Swap exact input for a minimum output on a V2 pool  |
+| `buy`                | Swap up to a maximum input for an exact output (V2) |
+| `mint-position`      | Create a new concentrated liquidity position (NFT)  |
+| `increase-liquidity` | Add liquidity to an existing V2 position            |
+| `decrease-liquidity` | Remove liquidity from a V2 position                 |
+| `collect-fees`       | Collect accrued swap fees from a V2 position        |
+| `list-pools`         | List V2 pools from the SaucerSwap REST API          |
+| `view-pool`          | Resolve and enrich a specific V2 pool               |
+| `list-positions`     | List V2 NFT positions held by an account            |
 
 Fee tiers: `500` (0.05%), `1500` (0.15%), `3000` (0.30%), `10000` (1.00%).
 
@@ -149,11 +149,11 @@ Copy-Item -Recurse skills\* .claude\skills\
 
 ### Available Skills
 
-| Skill | Description |
-| --- | --- |
-| `agentic-hedge-fund-saucerswap` | Flow 1 — observe a V1/V2 pool, compute an implied price, and execute a risk-checked swap or buy |
-| `agentic-hedge-fund-rebalance` | Flow 2 — atomic portfolio rebalance (transfer → swap → deposit) via a HIP-551 batch |
-| `agentic-hedge-fund-yield-entry` | Flow 4 entry — discover the deepest liquidity pool for a pair and enter a yield farming position |
+| Skill                              | Description                                                                                                           |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `agentic-hedge-fund-saucerswap`    | Flow 1 — observe a V1/V2 pool, compute an implied price, and execute a risk-checked swap or buy                       |
+| `agentic-hedge-fund-rebalance`     | Flow 2 — atomic portfolio rebalance (transfer → swap → deposit) via a HIP-551 batch                                   |
+| `agentic-hedge-fund-yield-entry`   | Flow 4 entry — discover the deepest liquidity pool for a pair and enter a yield farming position                      |
 | `agentic-hedge-fund-yield-monitor` | Flow 4 monitor — watch an open LP position for impermanent loss and exit automatically when the threshold is exceeded |
 
 Invoke skills inside Claude Code with `/agentic-hedge-fund-saucerswap`, `/agentic-hedge-fund-rebalance`, etc.

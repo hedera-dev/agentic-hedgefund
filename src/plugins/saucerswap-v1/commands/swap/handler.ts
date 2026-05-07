@@ -12,12 +12,12 @@ import type {
   SaucerSwapV1SwapSignTransactionResult,
 } from './types';
 
-import { ContractFunctionParameters } from '@hashgraph/sdk';
 import {
   BaseTransactionCommand,
   TransactionError,
   ValidationError,
 } from '@hiero-ledger/hiero-cli';
+import { ContractFunctionParameters } from '@hiero-ledger/sdk';
 
 import { getSaucerSwapV1Config } from '@/plugins/saucerswap-v1/constants';
 import { SaucerSwapV1ContractResolver } from '@/plugins/saucerswap-v1/saucerswap-contract-resolver';

@@ -1,5 +1,5 @@
-import { TokenId } from '@hashgraph/sdk';
 import { EntityIdSchema, ValidationError } from '@hiero-ledger/hiero-cli';
+import { TokenId } from '@hiero-ledger/sdk';
 
 export function tokenEvmAddress(tokenId: string): string {
   const result = EntityIdSchema.safeParse(tokenId);
