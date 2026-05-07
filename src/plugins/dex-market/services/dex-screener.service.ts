@@ -13,6 +13,7 @@ import {
 import {
   DEX_SCREENER_BASE_URL,
   DEX_SCREENER_DEFAULT_TIMEOUT_MS,
+  DEX_SCREENER_HEDERA_CHAIN_ID,
 } from './constants';
 
 import {
@@ -75,7 +76,9 @@ export class DexScreenerServiceImpl implements DexScreenerService {
     const raw = await this.fetchWithRetry(url);
     const parsed = this.parseOrThrow(DexScreenerSearchResponseSchema, raw);
     const pairs = parsed.pairs ?? [];
-    return pairs.filter((p) => p.chainId.toLowerCase() === 'hedera');
+    return pairs.filter(
+      (p) => p.chainId.toLowerCase() === DEX_SCREENER_HEDERA_CHAIN_ID,
+    );
   }
 
   private parseOrThrow<T>(schema: z.ZodType<T>, raw: unknown): T {

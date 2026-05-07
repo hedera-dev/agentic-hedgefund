@@ -1,13 +1,14 @@
 import { z } from 'zod';
 
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 import { DexScreenerTokenInfoSchema } from '@/plugins/dex-market/services/dex-screener-schemas';
 
 export const MarketSearchOutputSchema = z.object({
   network: z.string(),
   networkMismatchWarning: z.boolean(),
-  chain: z.literal('hedera'),
+  chain: z.literal(DEX_SCREENER_HEDERA_CHAIN_ID),
   query: z.string(),
-  all: z.boolean(),
+  limit: z.number().int().positive(),
   pairs: z.array(
     z.object({
       pairAddress: z.string(),
@@ -22,6 +23,7 @@ export const MarketSearchOutputSchema = z.object({
     }),
   ),
   totalCount: z.number().int().nonnegative(),
+  returnedCount: z.number().int().nonnegative(),
 });
 
 export type MarketSearchOutput = z.infer<typeof MarketSearchOutputSchema>;
@@ -35,6 +37,7 @@ export const MARKET_SEARCH_TEMPLATE = `
 🔍 Search: "{{query}}"
 Chain: {{chain}}
 Results: {{totalCount}}
+Returned: {{returnedCount}}
 {{#each pairs}}
 {{add1 @index}}. {{baseToken.symbol}}/{{quoteToken.symbol}} — {{dexId}}
    Address: {{pairAddress}}

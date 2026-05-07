@@ -1,12 +1,14 @@
 import { z } from 'zod';
 
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
+
 export const MarketPoolsOutputSchema = z.object({
   network: z.string(),
   networkMismatchWarning: z.boolean(),
-  chain: z.literal('hedera'),
+  chain: z.literal(DEX_SCREENER_HEDERA_CHAIN_ID),
   tokenInput: z.string(),
   evmAddress: z.string(),
-  all: z.boolean(),
+  limit: z.number().int().positive(),
   pools: z.array(
     z.object({
       pairAddress: z.string(),
@@ -29,6 +31,7 @@ export const MarketPoolsOutputSchema = z.object({
     }),
   ),
   totalCount: z.number().int().nonnegative(),
+  returnedCount: z.number().int().nonnegative(),
   moreCount: z.number().int().nonnegative(),
 });
 
@@ -43,6 +46,7 @@ export const MARKET_POOLS_TEMPLATE = `
 🌊 Pools for {{tokenInput}}
 Chain: {{chain}}
 Total: {{totalCount}}
+Returned: {{returnedCount}}
 {{#each pools}}
 {{add1 @index}}. {{dexId}} — {{baseToken.symbol}}/{{quoteToken.symbol}}
    Address: {{pairAddress}}
@@ -53,8 +57,6 @@ Total: {{totalCount}}
 
 {{/each}}
 {{#if (gt moreCount 0)}}
-{{#unless all}}
-... and {{moreCount}} more pools (use --all to show all)
-{{/unless}}
+... and {{moreCount}} more pools (increase --limit to show more)
 {{/if}}
 `.trim();

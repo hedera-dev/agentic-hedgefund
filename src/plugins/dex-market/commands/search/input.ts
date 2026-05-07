@@ -1,8 +1,16 @@
 import { z } from 'zod';
 
+import {
+  MarketSearchQuerySchema,
+  PositiveIntegerLimitSchema,
+} from '@/plugins/dex-market/commands/common/input-schemas';
+import { DEFAULT_SEARCH_LIMIT } from '@/plugins/dex-market/services/constants';
+
 export const MarketSearchInputSchema = z.object({
-  query: z.string().min(1).describe('Token symbol, name, or address'),
-  all: z.boolean().default(false).describe('Show all results (no limit)'),
+  query: MarketSearchQuerySchema,
+  limit: PositiveIntegerLimitSchema.default(DEFAULT_SEARCH_LIMIT).describe(
+    'Maximum number of results to return',
+  ),
 });
 
 export type MarketSearchInput = z.infer<typeof MarketSearchInputSchema>;

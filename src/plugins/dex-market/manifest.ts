@@ -2,6 +2,11 @@ import type { PluginManifest } from '@hiero-ledger/hiero-cli';
 import { OptionType } from '@hiero-ledger/hiero-cli';
 
 import {
+  DEFAULT_POOLS_LIMIT,
+  DEFAULT_SEARCH_LIMIT,
+  DEX_SCREENER_MAX_BATCH,
+} from './services/constants';
+import {
   marketLiquidity,
   MarketLiquidityOutputSchema,
   MARKET_LIQUIDITY_TEMPLATE,
@@ -42,15 +47,14 @@ export const dexMarketPluginManifest: PluginManifest = {
     {
       name: 'price',
       summary: 'Get current price(s) for one or more tokens',
-      description:
-        'Fetches current prices and top pair data from DexScreener for up to 30 tokens.',
+      description: `Fetches current prices and top pair data from DexScreener for up to ${DEX_SCREENER_MAX_BATCH} tokens.`,
       options: [
         {
-          name: 'tokens',
+          name: 'token',
           short: 't',
-          type: OptionType.STRING,
+          type: OptionType.REPEATABLE,
           required: true,
-          description: 'Comma-separated token IDs/addresses (max 30)',
+          description: `Token ID or EVM address (repeatable, max ${DEX_SCREENER_MAX_BATCH})`,
         },
       ],
       handler: marketPrice,
@@ -73,11 +77,11 @@ export const dexMarketPluginManifest: PluginManifest = {
           description: 'Token ID 0.0.x or EVM 0x...',
         },
         {
-          name: 'all',
-          short: 'a',
-          type: OptionType.BOOLEAN,
+          name: 'limit',
+          short: 'l',
+          type: OptionType.NUMBER,
           required: false,
-          description: 'Show all pools (no limit)',
+          description: `Maximum pools to return (default: ${DEFAULT_POOLS_LIMIT})`,
         },
       ],
       handler: marketPools,
@@ -119,11 +123,11 @@ export const dexMarketPluginManifest: PluginManifest = {
           description: 'Search query',
         },
         {
-          name: 'all',
-          short: 'a',
-          type: OptionType.BOOLEAN,
+          name: 'limit',
+          short: 'l',
+          type: OptionType.NUMBER,
           required: false,
-          description: 'Show all results (no limit)',
+          description: `Maximum results to return (default: ${DEFAULT_SEARCH_LIMIT})`,
         },
       ],
       handler: marketSearch,

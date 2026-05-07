@@ -1,11 +1,19 @@
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
+
+export const SAUCE_TOKEN_ID = '0.0.731861';
+export const UNKNOWN_TOKEN_ID = '0.0.999999';
+export const HBAR_TOKEN_ID = '0.0.456858';
+export const SAUCE_EVM_ADDRESS = '0x00000000000000000000000000000000000b2ad5';
+export const UNKNOWN_EVM_ADDRESS = '0x00000000000000000000000000000000000f423f';
+
 export const fixtureSaucePair = {
-  chainId: 'hedera',
+  chainId: DEX_SCREENER_HEDERA_CHAIN_ID,
   dexId: 'saucerswap',
   url: 'https://dexscreener.com/hedera/0x4A46705176faC8Fd5C8061F94A2C44416e7B20e6',
   pairAddress: '0x4A46705176faC8Fd5C8061F94A2C44416e7B20e6',
   labels: [],
   baseToken: {
-    address: '0x00000000000000000000000000000000000b2ad5',
+    address: SAUCE_EVM_ADDRESS,
     name: 'SAUCE',
     symbol: 'SAUCE',
   },
@@ -48,7 +56,7 @@ export const fixtureSaucePairV2 = {
   ...fixtureSaucePair,
   pairAddress: '0xCFEFfaAE43F176f91602D75ec1D0637E273c973b',
   baseToken: {
-    address: '0x00000000000000000000000000000000000b2ad5',
+    address: SAUCE_EVM_ADDRESS,
     name: 'SAUCE',
     symbol: 'SAUCE',
   },
@@ -71,7 +79,7 @@ export const fixtureUnknownChainPair = {
 };
 
 export const fixtureHbarPair = {
-  chainId: 'hedera',
+  chainId: DEX_SCREENER_HEDERA_CHAIN_ID,
   dexId: 'saucerswap',
   url: 'https://dexscreener.com/hedera/0x5fc19c944F1BCcF5159e6Ae92dC3bF2fF2576b98',
   pairAddress: '0x5fc19c944F1BCcF5159e6Ae92dC3bF2fF2576b98',
@@ -82,7 +90,7 @@ export const fixtureHbarPair = {
     symbol: 'WHBAR',
   },
   quoteToken: {
-    address: '0x00000000000000000000000000000000000b2ad5',
+    address: SAUCE_EVM_ADDRESS,
     name: 'SAUCE',
     symbol: 'SAUCE',
   },

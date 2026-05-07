@@ -7,6 +7,19 @@ export function makeLogger() {
     error: jest.fn(),
     debug: jest.fn(),
     fatal: jest.fn(),
+    setLevel: jest.fn(),
+  };
+}
+
+export function makeTokenAddressResolver(
+  evmAddress: string | Record<string, string>,
+) {
+  return {
+    resolveToEvmAddress: jest.fn((input: string) =>
+      Promise.resolve(
+        typeof evmAddress === 'string' ? evmAddress : evmAddress[input],
+      ),
+    ),
   };
 }
 

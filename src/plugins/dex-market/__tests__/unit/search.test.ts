@@ -20,27 +20,35 @@ describe('market search', () => {
       args: { query: 'SAUCE' },
     });
 
-    const result = await marketSearch(args, dexScreener as unknown as DexScreenerService);
+    const result = await marketSearch(
+      args,
+      dexScreener as unknown as DexScreenerService,
+    );
 
     expect(dexScreener.search).toHaveBeenCalledWith('SAUCE');
 
     const output = assertOutput(result.result, MarketSearchOutputSchema);
     expect(output.totalCount).toBe(2);
+    expect(output.returnedCount).toBe(2);
     expect(output.query).toBe('SAUCE');
-    expect(output.all).toBe(false);
   });
 
-  test('--all returns more results when available', async () => {
+  test('custom limit returns requested number of results', async () => {
     const dexScreener = {
       search: jest.fn().mockResolvedValue([fixtureSaucePair, fixtureHbarPair]),
     };
     const args = makeMarketCommandArgs({
-      args: { query: 'SAUCE', all: true },
+      args: { query: 'SAUCE', limit: 1 },
     });
 
-    const result = await marketSearch(args, dexScreener as unknown as DexScreenerService);
+    const result = await marketSearch(
+      args,
+      dexScreener as unknown as DexScreenerService,
+    );
     const output = assertOutput(result.result, MarketSearchOutputSchema);
-    expect(output.all).toBe(true);
+    expect(output.limit).toBe(1);
+    expect(output.totalCount).toBe(2);
+    expect(output.returnedCount).toBe(1);
   });
 
   test('empty results → returns empty array without throwing', async () => {
@@ -51,9 +59,13 @@ describe('market search', () => {
       args: { query: 'XYZUNKNOWN' },
     });
 
-    const result = await marketSearch(args, dexScreener as unknown as DexScreenerService);
+    const result = await marketSearch(
+      args,
+      dexScreener as unknown as DexScreenerService,
+    );
     const output = assertOutput(result.result, MarketSearchOutputSchema);
     expect(output.pairs).toEqual([]);
     expect(output.totalCount).toBe(0);
+    expect(output.returnedCount).toBe(0);
   });
 });

@@ -3,8 +3,10 @@ import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screen
 import {
   fixtureSaucePair,
   fixtureUnknownChainPair,
+  SAUCE_EVM_ADDRESS,
 } from '@/plugins/dex-market/__tests__/helpers/fixtures';
 import { makeLogger } from '@/plugins/dex-market/__tests__/helpers/mocks';
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 
 describe('DexScreenerServiceImpl', () => {
   let service: DexScreenerServiceImpl;
@@ -31,12 +33,12 @@ describe('DexScreenerServiceImpl', () => {
           }),
       });
 
-      const result = await service.getTokens('hedera', [
-        '0x00000000000000000000000000000000000b2ad5',
+      const result = await service.getTokens(DEX_SCREENER_HEDERA_CHAIN_ID, [
+        SAUCE_EVM_ADDRESS,
       ]);
 
       expect(result).toHaveLength(1);
-      expect(result[0].chainId).toBe('hedera');
+      expect(result[0].chainId).toBe(DEX_SCREENER_HEDERA_CHAIN_ID);
     });
 
     test('null pairs → empty array', async () => {
@@ -45,7 +47,9 @@ describe('DexScreenerServiceImpl', () => {
         json: () => Promise.resolve({ schemaVersion: '1.0.0', pairs: null }),
       });
 
-      const result = await service.getTokens('hedera', ['0x0']);
+      const result = await service.getTokens(DEX_SCREENER_HEDERA_CHAIN_ID, [
+        '0x0',
+      ]);
       expect(result).toEqual([]);
     });
 
@@ -56,9 +60,9 @@ describe('DexScreenerServiceImpl', () => {
         statusText: 'Not Found',
       });
 
-      await expect(service.getTokens('hedera', ['0x0'])).rejects.toThrow(
-        NetworkError,
-      );
+      await expect(
+        service.getTokens(DEX_SCREENER_HEDERA_CHAIN_ID, ['0x0']),
+      ).rejects.toThrow(NetworkError);
     });
 
     test('429 → retry then NetworkError', async () => {
@@ -79,9 +83,9 @@ describe('DexScreenerServiceImpl', () => {
           statusText: 'Too Many Requests',
         });
 
-      await expect(service.getTokens('hedera', ['0x0'])).rejects.toThrow(
-        NetworkError,
-      );
+      await expect(
+        service.getTokens(DEX_SCREENER_HEDERA_CHAIN_ID, ['0x0']),
+      ).rejects.toThrow(NetworkError);
       expect(fetchMock).toHaveBeenCalledTimes(3);
     });
   });
@@ -94,8 +98,8 @@ describe('DexScreenerServiceImpl', () => {
       });
 
       const result = await service.getTokenPairs(
-        'hedera',
-        '0x00000000000000000000000000000000000b2ad5',
+        DEX_SCREENER_HEDERA_CHAIN_ID,
+        SAUCE_EVM_ADDRESS,
       );
 
       expect(result).toHaveLength(1);
@@ -115,7 +119,7 @@ describe('DexScreenerServiceImpl', () => {
       });
 
       const result = await service.getPair(
-        'hedera',
+        DEX_SCREENER_HEDERA_CHAIN_ID,
         '0x4A46705176faC8Fd5C8061F94A2C44416e7B20e6',
       );
 
@@ -133,9 +137,9 @@ describe('DexScreenerServiceImpl', () => {
           }),
       });
 
-      await expect(service.getPair('hedera', '0x0')).rejects.toThrow(
-        NotFoundError,
-      );
+      await expect(
+        service.getPair(DEX_SCREENER_HEDERA_CHAIN_ID, '0x0'),
+      ).rejects.toThrow(NotFoundError);
     });
   });
 
@@ -152,7 +156,7 @@ describe('DexScreenerServiceImpl', () => {
 
       const result = await service.search('SAUCE');
       expect(result).toHaveLength(1);
-      expect(result[0].chainId).toBe('hedera');
+      expect(result[0].chainId).toBe(DEX_SCREENER_HEDERA_CHAIN_ID);
     });
   });
 });

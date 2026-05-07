@@ -3,17 +3,16 @@ import type {
   CommandHandlerArgs,
   CommandResult,
 } from '@hiero-ledger/hiero-cli';
-import type { DexScreenerPair } from '@/plugins/dex-market/services/dex-screener-types';
 import type { MarketSearchOutput } from './output';
 import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
 
 import { SupportedNetwork } from '@hiero-ledger/hiero-cli';
 import { formatNumber } from '@/plugins/dex-market/utils/format-number';
+import { sortByLiquidityDesc } from '@/plugins/dex-market/utils/pairs';
 import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 
 import { MarketSearchInputSchema } from './input';
-
-const MAX_SEARCH_RESULTS = 20;
 
 export class MarketSearchCommand implements Command {
   constructor(private readonly dexScreener: DexScreenerService) {}
@@ -25,15 +24,10 @@ export class MarketSearchCommand implements Command {
     const network = api.network.getCurrentNetwork();
     const results = await this.dexScreener.search(validArgs.query);
 
-    const sorted = results
-      .sort((a: DexScreenerPair, b: DexScreenerPair) => {
-        const aLiq = a.liquidity?.usd ?? 0;
-        const bLiq = b.liquidity?.usd ?? 0;
-        return bLiq - aLiq;
-      })
-      .slice(0, validArgs.all ? undefined : MAX_SEARCH_RESULTS);
+    const sorted = sortByLiquidityDesc(results);
+    const displayPairs = sorted.slice(0, validArgs.limit);
 
-    const pairs = sorted.map((p) => ({
+    const pairs = displayPairs.map((p) => ({
       pairAddress: p.pairAddress,
       dexId: p.dexId,
       baseToken: p.baseToken,
@@ -48,11 +42,12 @@ export class MarketSearchCommand implements Command {
     const outputData: MarketSearchOutput = {
       network,
       networkMismatchWarning: network !== SupportedNetwork.MAINNET,
-      chain: 'hedera',
+      chain: DEX_SCREENER_HEDERA_CHAIN_ID,
       query: validArgs.query,
-      all: validArgs.all,
+      limit: validArgs.limit,
       pairs,
-      totalCount: pairs.length,
+      totalCount: sorted.length,
+      returnedCount: pairs.length,
     };
 
     return { result: outputData };

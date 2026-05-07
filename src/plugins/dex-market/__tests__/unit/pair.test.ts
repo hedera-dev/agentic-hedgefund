@@ -2,6 +2,7 @@ import { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.s
 
 import { assertOutput } from '@/plugins/dex-market/__tests__/utils/assert-output';
 import { NotFoundError } from '@hiero-ledger/hiero-cli';
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 import { fixtureSaucePair } from '@/plugins/dex-market/__tests__/helpers/fixtures';
 import { makeMarketCommandArgs } from '@/plugins/dex-market/__tests__/helpers/mocks';
 import {
@@ -18,10 +19,13 @@ describe('market pair', () => {
       args: { pair: '0x4A46705176faC8Fd5C8061F94A2C44416e7B20e6' },
     });
 
-    const result = await marketPair(args, dexScreener as unknown as DexScreenerService);
+    const result = await marketPair(
+      args,
+      dexScreener as unknown as DexScreenerService,
+    );
 
     expect(dexScreener.getPair).toHaveBeenCalledWith(
-      'hedera',
+      DEX_SCREENER_HEDERA_CHAIN_ID,
       '0x4A46705176faC8Fd5C8061F94A2C44416e7B20e6',
     );
 
@@ -38,6 +42,8 @@ describe('market pair', () => {
       args: { pair: '0x0000000000000000000000000000000000000000' },
     });
 
-    await expect(marketPair(args, dexScreener as unknown as DexScreenerService)).rejects.toThrow(NotFoundError);
+    await expect(
+      marketPair(args, dexScreener as unknown as DexScreenerService),
+    ).rejects.toThrow(NotFoundError);
   });
 });

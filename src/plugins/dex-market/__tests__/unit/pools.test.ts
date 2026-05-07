@@ -5,8 +5,15 @@ import { NotFoundError } from '@hiero-ledger/hiero-cli';
 import {
   fixtureSaucePair,
   fixtureSaucePairV2,
+  SAUCE_EVM_ADDRESS,
+  SAUCE_TOKEN_ID,
+  UNKNOWN_TOKEN_ID,
 } from '@/plugins/dex-market/__tests__/helpers/fixtures';
-import { makeMarketCommandArgs } from '@/plugins/dex-market/__tests__/helpers/mocks';
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
+import {
+  makeMarketCommandArgs,
+  makeTokenAddressResolver,
+} from '@/plugins/dex-market/__tests__/helpers/mocks';
 import {
   marketPools,
   MarketPoolsOutputSchema,
@@ -19,48 +26,66 @@ describe('market pools', () => {
         .fn()
         .mockResolvedValue([fixtureSaucePair, fixtureSaucePairV2]),
     };
+    const tokenResolver = makeTokenAddressResolver(SAUCE_EVM_ADDRESS);
     const args = makeMarketCommandArgs({
-      args: { token: '0.0.731861' },
+      args: { token: SAUCE_TOKEN_ID },
     });
 
-    const result = await marketPools(args, dexScreener as unknown as DexScreenerService);
+    const result = await marketPools(
+      args,
+      dexScreener as unknown as DexScreenerService,
+      tokenResolver,
+    );
 
     expect(dexScreener.getTokenPairs).toHaveBeenCalledWith(
-      'hedera',
-      '0x00000000000000000000000000000000000b2ad5',
+      DEX_SCREENER_HEDERA_CHAIN_ID,
+      SAUCE_EVM_ADDRESS,
     );
 
     const output = assertOutput(result.result, MarketPoolsOutputSchema);
     expect(output.totalCount).toBe(2);
-    expect(output.all).toBe(false);
+    expect(output.returnedCount).toBe(2);
     expect(output.pools[0].pairAddress).toBe(fixtureSaucePair.pairAddress);
     expect(output.pools[1].pairAddress).toBe(fixtureSaucePairV2.pairAddress);
   });
 
-  test('--all returns all pools without limit', async () => {
+  test('custom limit returns requested number of pools', async () => {
     const dexScreener = {
       getTokenPairs: jest
         .fn()
         .mockResolvedValue([fixtureSaucePair, fixtureSaucePairV2]),
     };
+    const tokenResolver = makeTokenAddressResolver(SAUCE_EVM_ADDRESS);
     const args = makeMarketCommandArgs({
-      args: { token: '0.0.731861', all: true },
+      args: { token: SAUCE_TOKEN_ID, limit: 1 },
     });
 
-    const result = await marketPools(args, dexScreener as unknown as DexScreenerService);
+    const result = await marketPools(
+      args,
+      dexScreener as unknown as DexScreenerService,
+      tokenResolver,
+    );
     const output = assertOutput(result.result, MarketPoolsOutputSchema);
-    expect(output.all).toBe(true);
-    expect(output.moreCount).toBe(0);
+    expect(output.limit).toBe(1);
+    expect(output.returnedCount).toBe(1);
+    expect(output.moreCount).toBe(1);
   });
 
   test('empty pools → NotFoundError', async () => {
     const dexScreener = {
       getTokenPairs: jest.fn().mockResolvedValue([]),
     };
+    const tokenResolver = makeTokenAddressResolver(SAUCE_EVM_ADDRESS);
     const args = makeMarketCommandArgs({
-      args: { token: '0.0.999999' },
+      args: { token: UNKNOWN_TOKEN_ID },
     });
 
-    await expect(marketPools(args, dexScreener as unknown as DexScreenerService)).rejects.toThrow(NotFoundError);
+    await expect(
+      marketPools(
+        args,
+        dexScreener as unknown as DexScreenerService,
+        tokenResolver,
+      ),
+    ).rejects.toThrow(NotFoundError);
   });
 });

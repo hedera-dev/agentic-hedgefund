@@ -9,6 +9,7 @@ import type { DexScreenerService } from '@/plugins/dex-market/services/dex-scree
 import { SupportedNetwork } from '@hiero-ledger/hiero-cli';
 import { formatNumber } from '@/plugins/dex-market/utils/format-number';
 import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 
 import { MarketPairInputSchema } from './input';
 
@@ -20,12 +21,15 @@ export class MarketPairCommand implements Command {
     const validArgs = MarketPairInputSchema.parse(args.args);
 
     const network = api.network.getCurrentNetwork();
-    const pair = await this.dexScreener.getPair('hedera', validArgs.pair);
+    const pair = await this.dexScreener.getPair(
+      DEX_SCREENER_HEDERA_CHAIN_ID,
+      validArgs.pair,
+    );
 
     const outputData: MarketPairOutput = {
       network,
       networkMismatchWarning: network !== SupportedNetwork.MAINNET,
-      chain: 'hedera',
+      chain: DEX_SCREENER_HEDERA_CHAIN_ID,
       pairAddress: pair.pairAddress,
       dexId: pair.dexId,
       url: pair.url,

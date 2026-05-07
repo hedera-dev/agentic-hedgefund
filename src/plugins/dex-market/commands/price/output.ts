@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
+
 export const MarketPriceItemSchema = z.object({
   input: z.string(),
   evmAddress: z.string(),
@@ -26,7 +28,7 @@ export const MarketPriceItemSchema = z.object({
 export const MarketPriceOutputSchema = z.object({
   network: z.string(),
   networkMismatchWarning: z.boolean(),
-  chain: z.literal('hedera'),
+  chain: z.literal(DEX_SCREENER_HEDERA_CHAIN_ID),
   tokens: z.array(MarketPriceItemSchema),
   totalCount: z.number().int().nonnegative(),
   indexedCount: z.number().int().nonnegative(),

@@ -6,12 +6,15 @@ import type {
 import type { DexScreenerPair } from '@/plugins/dex-market/services/dex-screener-types';
 import type { MarketPriceOutput } from './output';
 import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
+import type { TokenAddressResolverService } from '@/plugins/dex-market/utils/token-id-resolver';
 
 import { NotFoundError } from '@hiero-ledger/hiero-cli';
 import { SupportedNetwork } from '@hiero-ledger/hiero-cli';
 import { formatNumber } from '@/plugins/dex-market/utils/format-number';
-import { resolveToEvmAddress } from '@/plugins/dex-market/utils/token-id-resolver';
+import { findTopLiquidityPair } from '@/plugins/dex-market/utils/pairs';
+import { TokenAddressResolver as DefaultTokenAddressResolver } from '@/plugins/dex-market/utils/token-id-resolver';
 import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 
 import { MarketPriceInputSchema } from './input';
 
@@ -29,25 +32,31 @@ function findTopPairForToken(
     return undefined;
   }
 
-  return tokenPairs.reduce((best, current) => {
-    const bestLiq = best.liquidity?.usd ?? 0;
-    const currentLiq = current.liquidity?.usd ?? 0;
-    return currentLiq > bestLiq ? current : best;
-  });
+  return findTopLiquidityPair(tokenPairs);
 }
 
 export class MarketPriceCommand implements Command {
-  constructor(private readonly dexScreener: DexScreenerService) {}
+  constructor(
+    private readonly dexScreener: DexScreenerService,
+    private readonly tokenResolver: TokenAddressResolverService,
+  ) {}
 
   async execute(args: CommandHandlerArgs): Promise<CommandResult> {
     const { api } = args;
     const validArgs = MarketPriceInputSchema.parse(args.args);
 
     const network = api.network.getCurrentNetwork();
-    const evmAddresses = validArgs.tokens.map(resolveToEvmAddress);
-    const pairs = await this.dexScreener.getTokens('hedera', evmAddresses);
+    const evmAddresses = await Promise.all(
+      validArgs.token.map((token) =>
+        this.tokenResolver.resolveToEvmAddress(token, network),
+      ),
+    );
+    const pairs = await this.dexScreener.getTokens(
+      DEX_SCREENER_HEDERA_CHAIN_ID,
+      evmAddresses,
+    );
 
-    const items = validArgs.tokens.map((input, index) => {
+    const items = validArgs.token.map((input, index) => {
       const evmAddress = evmAddresses[index];
       const topPair = findTopPairForToken(pairs, evmAddress);
 
@@ -85,14 +94,14 @@ export class MarketPriceCommand implements Command {
 
     if (indexedCount === 0) {
       throw new NotFoundError('No market data found for provided tokens', {
-        context: { inputs: validArgs.tokens },
+        context: { inputs: validArgs.token },
       });
     }
 
     const outputData: MarketPriceOutput = {
       network,
       networkMismatchWarning: network !== SupportedNetwork.MAINNET,
-      chain: 'hedera',
+      chain: DEX_SCREENER_HEDERA_CHAIN_ID,
       tokens: items,
       totalCount: items.length,
       indexedCount,
@@ -106,8 +115,10 @@ export class MarketPriceCommand implements Command {
 export async function marketPrice(
   args: CommandHandlerArgs,
   dexScreenerService?: DexScreenerService,
+  tokenResolver?: TokenAddressResolverService,
 ): Promise<CommandResult> {
   const dexScreener =
     dexScreenerService ?? new DexScreenerServiceImpl(args.logger);
-  return new MarketPriceCommand(dexScreener).execute(args);
+  const resolver = tokenResolver ?? new DefaultTokenAddressResolver();
+  return new MarketPriceCommand(dexScreener, resolver).execute(args);
 }

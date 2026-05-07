@@ -1,19 +1,15 @@
 import { z } from 'zod';
 
-const DEX_SCREENER_MAX_BATCH = 30;
+import { MarketTokenReferenceSchema } from '@/plugins/dex-market/commands/common/input-schemas';
+import { DEX_SCREENER_MAX_BATCH } from '@/plugins/dex-market/services/constants';
 
 export const MarketPriceInputSchema = z.object({
-  tokens: z
-    .string()
-    .transform((v) =>
-      v
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
-    )
-    .pipe(z.array(z.string()).min(1).max(DEX_SCREENER_MAX_BATCH))
+  token: z
+    .array(MarketTokenReferenceSchema)
+    .min(1)
+    .max(DEX_SCREENER_MAX_BATCH)
     .describe(
-      'Comma-separated token references (Hedera 0.0.x or EVM 0x...). Max 30.',
+      `Token references (Hedera 0.0.x or EVM 0x...). Max ${DEX_SCREENER_MAX_BATCH}.`,
     ),
 });
 

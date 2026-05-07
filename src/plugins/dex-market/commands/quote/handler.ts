@@ -5,12 +5,15 @@ import type {
 } from '@hiero-ledger/hiero-cli';
 import type { MarketQuoteOutput } from './output';
 import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
+import type { TokenAddressResolverService } from '@/plugins/dex-market/utils/token-id-resolver';
 
 import { NotFoundError } from '@hiero-ledger/hiero-cli';
 import { SupportedNetwork } from '@hiero-ledger/hiero-cli';
 import { formatNumber } from '@/plugins/dex-market/utils/format-number';
-import { resolveToEvmAddress } from '@/plugins/dex-market/utils/token-id-resolver';
+import { findTopLiquidityPair } from '@/plugins/dex-market/utils/pairs';
+import { TokenAddressResolver as DefaultTokenAddressResolver } from '@/plugins/dex-market/utils/token-id-resolver';
 import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 
 import { MarketQuoteInputSchema } from './input';
 
@@ -21,15 +24,24 @@ function computeWarningLevel(slippagePct: number): 'low' | 'medium' | 'high' {
 }
 
 export class MarketQuoteCommand implements Command {
-  constructor(private readonly dexScreener: DexScreenerService) {}
+  constructor(
+    private readonly dexScreener: DexScreenerService,
+    private readonly tokenResolver: TokenAddressResolverService,
+  ) {}
 
   async execute(args: CommandHandlerArgs): Promise<CommandResult> {
     const { api } = args;
     const validArgs = MarketQuoteInputSchema.parse(args.args);
 
     const network = api.network.getCurrentNetwork();
-    const evmAddress = resolveToEvmAddress(validArgs.token);
-    const pairs = await this.dexScreener.getTokenPairs('hedera', evmAddress);
+    const evmAddress = await this.tokenResolver.resolveToEvmAddress(
+      validArgs.token,
+      network,
+    );
+    const pairs = await this.dexScreener.getTokenPairs(
+      DEX_SCREENER_HEDERA_CHAIN_ID,
+      evmAddress,
+    );
 
     if (pairs.length === 0) {
       throw new NotFoundError(
@@ -38,11 +50,7 @@ export class MarketQuoteCommand implements Command {
       );
     }
 
-    const topPool = pairs.reduce((best, current) => {
-      const bestLiq = best.liquidity?.usd ?? 0;
-      const currentLiq = current.liquidity?.usd ?? 0;
-      return currentLiq > bestLiq ? current : best;
-    });
+    const topPool = findTopLiquidityPair(pairs)!;
 
     const liquidityUsd = topPool.liquidity?.usd;
     if (liquidityUsd === undefined) {
@@ -85,8 +93,10 @@ export class MarketQuoteCommand implements Command {
 export async function marketQuote(
   args: CommandHandlerArgs,
   dexScreenerService?: DexScreenerService,
+  tokenResolver?: TokenAddressResolverService,
 ): Promise<CommandResult> {
   const dexScreener =
     dexScreenerService ?? new DexScreenerServiceImpl(args.logger);
-  return new MarketQuoteCommand(dexScreener).execute(args);
+  const resolver = tokenResolver ?? new DefaultTokenAddressResolver();
+  return new MarketQuoteCommand(dexScreener, resolver).execute(args);
 }

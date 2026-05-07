@@ -5,27 +5,37 @@ import type {
 } from '@hiero-ledger/hiero-cli';
 import type { MarketPoolsOutput } from './output';
 import type { DexScreenerService } from '@/plugins/dex-market/services/dex-screener.service.interface';
+import type { TokenAddressResolverService } from '@/plugins/dex-market/utils/token-id-resolver';
 
 import { NotFoundError } from '@hiero-ledger/hiero-cli';
 import { SupportedNetwork } from '@hiero-ledger/hiero-cli';
 import { formatNumber } from '@/plugins/dex-market/utils/format-number';
-import { resolveToEvmAddress } from '@/plugins/dex-market/utils/token-id-resolver';
+import { sortByLiquidityDesc } from '@/plugins/dex-market/utils/pairs';
+import { TokenAddressResolver as DefaultTokenAddressResolver } from '@/plugins/dex-market/utils/token-id-resolver';
 import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 
 import { MarketPoolsInputSchema } from './input';
 
-const MAX_DISPLAY_POOLS = 15;
-
 export class MarketPoolsCommand implements Command {
-  constructor(private readonly dexScreener: DexScreenerService) {}
+  constructor(
+    private readonly dexScreener: DexScreenerService,
+    private readonly tokenResolver: TokenAddressResolverService,
+  ) {}
 
   async execute(args: CommandHandlerArgs): Promise<CommandResult> {
     const { api } = args;
     const validArgs = MarketPoolsInputSchema.parse(args.args);
 
     const network = api.network.getCurrentNetwork();
-    const evmAddress = resolveToEvmAddress(validArgs.token);
-    const allPairs = await this.dexScreener.getTokenPairs('hedera', evmAddress);
+    const evmAddress = await this.tokenResolver.resolveToEvmAddress(
+      validArgs.token,
+      network,
+    );
+    const allPairs = await this.dexScreener.getTokenPairs(
+      DEX_SCREENER_HEDERA_CHAIN_ID,
+      evmAddress,
+    );
 
     if (allPairs.length === 0) {
       throw new NotFoundError(`No pools found for token ${validArgs.token}`, {
@@ -33,13 +43,9 @@ export class MarketPoolsCommand implements Command {
       });
     }
 
-    const sorted = allPairs.sort((a, b) => {
-      const aLiq = a.liquidity?.usd ?? 0;
-      const bLiq = b.liquidity?.usd ?? 0;
-      return bLiq - aLiq;
-    });
+    const sorted = sortByLiquidityDesc(allPairs);
 
-    const displayPairs = validArgs.all ? sorted : sorted.slice(0, MAX_DISPLAY_POOLS);
+    const displayPairs = sorted.slice(0, validArgs.limit);
 
     const pools = displayPairs.map((p) => ({
       pairAddress: p.pairAddress,
@@ -64,13 +70,14 @@ export class MarketPoolsCommand implements Command {
     const outputData: MarketPoolsOutput = {
       network,
       networkMismatchWarning: network !== SupportedNetwork.MAINNET,
-      chain: 'hedera',
+      chain: DEX_SCREENER_HEDERA_CHAIN_ID,
       tokenInput: validArgs.token,
       evmAddress,
-      all: validArgs.all,
+      limit: validArgs.limit,
       pools,
       totalCount: sorted.length,
-      moreCount: validArgs.all ? 0 : Math.max(0, sorted.length - MAX_DISPLAY_POOLS),
+      returnedCount: pools.length,
+      moreCount: Math.max(0, sorted.length - pools.length),
     };
 
     return { result: outputData };
@@ -80,8 +87,10 @@ export class MarketPoolsCommand implements Command {
 export async function marketPools(
   args: CommandHandlerArgs,
   dexScreenerService?: DexScreenerService,
+  tokenResolver?: TokenAddressResolverService,
 ): Promise<CommandResult> {
   const dexScreener =
     dexScreenerService ?? new DexScreenerServiceImpl(args.logger);
-  return new MarketPoolsCommand(dexScreener).execute(args);
+  const resolver = tokenResolver ?? new DefaultTokenAddressResolver();
+  return new MarketPoolsCommand(dexScreener, resolver).execute(args);
 }
