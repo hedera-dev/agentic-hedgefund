@@ -15,7 +15,6 @@ import {
 
 import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
 import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
-import { MirrorNodeServiceImpl } from '@/plugins/dex-market/services/mirror-node.service';
 import { TokenAddressServiceImpl } from '@/plugins/dex-market/services/token-address.service';
 import { formatNumber } from '@/plugins/dex-market/utils/format-number';
 import { findTopLiquidityPair } from '@/plugins/dex-market/utils/pairs';
@@ -99,7 +98,6 @@ export async function marketLiquidity(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
   const dexScreener = new DexScreenerServiceImpl(args.logger);
-  const mirrorNode = new MirrorNodeServiceImpl();
-  const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
+  const tokenAddress = new TokenAddressServiceImpl(args.api.mirror);
   return new MarketLiquidityCommand(dexScreener, tokenAddress).execute(args);
 }
