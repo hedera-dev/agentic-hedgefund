@@ -1,4 +1,5 @@
 import type { CommandHandlerArgs } from '@hiero-ledger/hiero-cli';
+import type { ResolvedTokenAddress } from '@/plugins/dex-market/services/token-address.service.interface';
 
 export function makeLogger() {
   return {
@@ -15,11 +16,16 @@ export function makeTokenAddressService(
   evmAddress: string | Record<string, string>,
 ) {
   return {
-    resolveEvmAddress: jest.fn((input: string) =>
-      Promise.resolve(
-        typeof evmAddress === 'string' ? evmAddress : evmAddress[input],
-      ),
-    ),
+    resolveTokenAddress: jest.fn((input: string) => {
+      const resolvedEvmAddress =
+        typeof evmAddress === 'string' ? evmAddress : evmAddress[input];
+      const resolvedToken: ResolvedTokenAddress = {
+        tokenId: input,
+        evmAddress: resolvedEvmAddress,
+      };
+
+      return Promise.resolve(resolvedToken);
+    }),
   };
 }
 

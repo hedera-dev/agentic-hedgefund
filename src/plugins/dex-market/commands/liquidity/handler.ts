@@ -32,19 +32,19 @@ export class MarketLiquidityCommand implements Command {
     const validArgs = MarketLiquidityInputSchema.parse(args.args);
 
     const network = api.network.getCurrentNetwork();
-    const evmAddress = await this.tokenAddress.resolveEvmAddress(
+    const resolvedToken = await this.tokenAddress.resolveTokenAddress(
       validArgs.token,
       network,
     );
     const pairs = await this.dexScreener.getTokenPairs(
       DEX_SCREENER_HEDERA_CHAIN_ID,
-      evmAddress,
+      resolvedToken.evmAddress,
     );
 
     if (pairs.length === 0) {
       throw new NotFoundError(
         `No liquidity data found for token ${validArgs.token}`,
-        { context: { token: validArgs.token, evmAddress } },
+        { context: { token: validArgs.token, ...resolvedToken } },
       );
     }
 
@@ -57,7 +57,7 @@ export class MarketLiquidityCommand implements Command {
     if (!topPool) {
       throw new NotFoundError(
         `No liquidity data found for token ${validArgs.token}`,
-        { context: { token: validArgs.token, evmAddress } },
+        { context: { token: validArgs.token, ...resolvedToken } },
       );
     }
 
@@ -67,7 +67,8 @@ export class MarketLiquidityCommand implements Command {
       network,
       networkMismatchWarning: network !== SupportedNetwork.MAINNET,
       tokenInput: validArgs.token,
-      evmAddress,
+      tokenId: resolvedToken.tokenId,
+      evmAddress: resolvedToken.evmAddress,
       totalLiquidityUsd,
       totalLiquidityUsdFormatted: formatNumber(totalLiquidityUsd) ?? '0',
       poolCount: pairs.length,

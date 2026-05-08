@@ -28,18 +28,18 @@ export class MarketPoolsCommand implements Command {
     const validArgs = MarketPoolsInputSchema.parse(args.args);
 
     const network = api.network.getCurrentNetwork();
-    const evmAddress = await this.tokenAddress.resolveEvmAddress(
+    const resolvedToken = await this.tokenAddress.resolveTokenAddress(
       validArgs.token,
       network,
     );
     const allPairs = await this.dexScreener.getTokenPairs(
       DEX_SCREENER_HEDERA_CHAIN_ID,
-      evmAddress,
+      resolvedToken.evmAddress,
     );
 
     if (allPairs.length === 0) {
       throw new NotFoundError(`No pools found for token ${validArgs.token}`, {
-        context: { token: validArgs.token, evmAddress },
+        context: { token: validArgs.token, ...resolvedToken },
       });
     }
 
@@ -72,7 +72,8 @@ export class MarketPoolsCommand implements Command {
       networkMismatchWarning: network !== SupportedNetwork.MAINNET,
       chain: DEX_SCREENER_HEDERA_CHAIN_ID,
       tokenInput: validArgs.token,
-      evmAddress,
+      tokenId: resolvedToken.tokenId,
+      evmAddress: resolvedToken.evmAddress,
       limit: validArgs.limit,
       pools,
       totalCount: sorted.length,

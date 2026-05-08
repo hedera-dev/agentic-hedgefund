@@ -29,31 +29,33 @@ export class MarketPriceCommand implements Command {
     const validArgs = MarketPriceInputSchema.parse(args.args);
 
     const network = api.network.getCurrentNetwork();
-    const evmAddresses = await Promise.all(
+    const resolvedTokens = await Promise.all(
       validArgs.token.map((token) =>
-        this.tokenAddress.resolveEvmAddress(token, network),
+        this.tokenAddress.resolveTokenAddress(token, network),
       ),
     );
     const pairs = await this.dexScreener.getTokens(
       DEX_SCREENER_HEDERA_CHAIN_ID,
-      evmAddresses,
+      resolvedTokens.map((token) => token.evmAddress),
     );
 
     const items = validArgs.token.map((input, index) => {
-      const evmAddress = evmAddresses[index];
-      const topPair = this.findTopPairForToken(pairs, evmAddress);
+      const resolvedToken = resolvedTokens[index];
+      const topPair = this.findTopPairForToken(pairs, resolvedToken.evmAddress);
 
       if (!topPair) {
         return {
           input,
-          evmAddress,
+          tokenId: resolvedToken.tokenId,
+          evmAddress: resolvedToken.evmAddress,
           indexed: false,
         };
       }
 
       return {
         input,
-        evmAddress,
+        tokenId: resolvedToken.tokenId,
+        evmAddress: resolvedToken.evmAddress,
         symbol: topPair.baseToken.symbol,
         name: topPair.baseToken.name,
         indexed: true,

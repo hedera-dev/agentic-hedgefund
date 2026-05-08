@@ -1,12 +1,18 @@
 import type { HederaMirrornodeService } from '@hiero-ledger/hiero-cli';
-import type { TokenAddressService } from './token-address.service.interface';
+import type {
+  ResolvedTokenAddress,
+  TokenAddressService,
+} from './token-address.service.interface';
 
 import { ValidationError } from '@hiero-ledger/hiero-cli';
 
 export class TokenAddressServiceImpl implements TokenAddressService {
   constructor(private readonly mirrorNode: HederaMirrornodeService) {}
 
-  async resolveEvmAddress(input: string, _network: string): Promise<string> {
+  async resolveTokenAddress(
+    input: string,
+    _network: string,
+  ): Promise<ResolvedTokenAddress> {
     const trimmed = input.trim();
     const tokenReference = this.normalizeTokenReference(trimmed);
     const token = await this.mirrorNode.getTokenInfo(tokenReference);
@@ -18,7 +24,10 @@ export class TokenAddressServiceImpl implements TokenAddressService {
       );
     }
 
-    return this.tokenIdToEvmAddress(tokenId);
+    return {
+      tokenId,
+      evmAddress: this.tokenIdToEvmAddress(tokenId),
+    };
   }
 
   private normalizeTokenReference(tokenReference: string): string {

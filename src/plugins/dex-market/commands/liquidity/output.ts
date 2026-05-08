@@ -4,6 +4,7 @@ export const MarketLiquidityOutputSchema = z.object({
   network: z.string(),
   networkMismatchWarning: z.boolean(),
   tokenInput: z.string(),
+  tokenId: z.string(),
   evmAddress: z.string(),
   totalLiquidityUsd: z.number(),
   totalLiquidityUsdFormatted: z.string(),
@@ -31,7 +32,8 @@ export const MARKET_LIQUIDITY_TEMPLATE = `
 {{/if}}
 
 💧 Liquidity Health
-   Token: {{tokenInput}}
+   Token ID: {{tokenId}}
+   EVM: {{evmAddress}}
    💧 Total Liquidity: \${{totalLiquidityUsdFormatted}}
    🌊 Pools: {{poolCount}}
    🎯 Threshold: \${{thresholdFormatted}}

@@ -43,6 +43,8 @@ describe('market liquidity', () => {
       (fixtureSaucePair.liquidity?.usd ?? 0) +
       (fixtureSaucePairV2.liquidity?.usd ?? 0);
     expect(output.hasHealthyLiquidity).toBe(true);
+    expect(output.tokenId).toBe(SAUCE_TOKEN_ID);
+    expect(output.evmAddress).toBe(SAUCE_EVM_ADDRESS);
     expect(output.poolCount).toBe(2);
     expect(output.totalLiquidityUsd).toBe(expectedTotalLiquidity);
   });

@@ -28,19 +28,19 @@ export class MarketQuoteCommand implements Command {
     const validArgs = MarketQuoteInputSchema.parse(args.args);
 
     const network = api.network.getCurrentNetwork();
-    const evmAddress = await this.tokenAddress.resolveEvmAddress(
+    const resolvedToken = await this.tokenAddress.resolveTokenAddress(
       validArgs.token,
       network,
     );
     const pairs = await this.dexScreener.getTokenPairs(
       DEX_SCREENER_HEDERA_CHAIN_ID,
-      evmAddress,
+      resolvedToken.evmAddress,
     );
 
     if (pairs.length === 0) {
       throw new NotFoundError(
         `No liquidity data for token ${validArgs.token}`,
-        { context: { token: validArgs.token, evmAddress } },
+        { context: { token: validArgs.token, ...resolvedToken } },
       );
     }
 
@@ -48,7 +48,7 @@ export class MarketQuoteCommand implements Command {
     if (!topPool) {
       throw new NotFoundError(
         `No liquidity data for token ${validArgs.token}`,
-        { context: { token: validArgs.token, evmAddress } },
+        { context: { token: validArgs.token, ...resolvedToken } },
       );
     }
 
@@ -56,7 +56,7 @@ export class MarketQuoteCommand implements Command {
     if (liquidityUsd === undefined) {
       throw new NotFoundError(
         `No liquidity data for token ${validArgs.token}`,
-        { context: { token: validArgs.token, evmAddress } },
+        { context: { token: validArgs.token, ...resolvedToken } },
       );
     }
 
@@ -71,7 +71,8 @@ export class MarketQuoteCommand implements Command {
       network,
       networkMismatchWarning: network !== SupportedNetwork.MAINNET,
       tokenInput: validArgs.token,
-      evmAddress,
+      tokenId: resolvedToken.tokenId,
+      evmAddress: resolvedToken.evmAddress,
       sizeUsd,
       sizeUsdFormatted: formatNumber(sizeUsd) ?? '0',
       topPool: {

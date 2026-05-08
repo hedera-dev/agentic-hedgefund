@@ -44,6 +44,8 @@ describe('market pools', () => {
     );
 
     const output = assertOutput(result.result, MarketPoolsOutputSchema);
+    expect(output.tokenId).toBe(SAUCE_TOKEN_ID);
+    expect(output.evmAddress).toBe(SAUCE_EVM_ADDRESS);
     expect(output.totalCount).toBe(2);
     expect(output.returnedCount).toBe(2);
     expect(output.pools[0].pairAddress).toBe(fixtureSaucePair.pairAddress);

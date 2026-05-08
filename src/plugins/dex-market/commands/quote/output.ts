@@ -4,6 +4,7 @@ export const MarketQuoteOutputSchema = z.object({
   network: z.string(),
   networkMismatchWarning: z.boolean(),
   tokenInput: z.string(),
+  tokenId: z.string(),
   evmAddress: z.string(),
   sizeUsd: z.number(),
   sizeUsdFormatted: z.string(),
@@ -30,7 +31,8 @@ export const MARKET_QUOTE_TEMPLATE = `
 {{/if}}
 
 📊 Trade Quote
-   Token: {{tokenInput}}
+   Token ID: {{tokenId}}
+   EVM: {{evmAddress}}
    💵 Size: \${{sizeUsdFormatted}}
 
 🏆 Top Pool

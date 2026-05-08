@@ -48,6 +48,8 @@ describe('market price', () => {
 
     const output = assertOutput(result.result, MarketPriceOutputSchema);
     expect(output.indexedCount).toBe(1);
+    expect(output.tokens[0].tokenId).toBe(SAUCE_TOKEN_ID);
+    expect(output.tokens[0].evmAddress).toBe(SAUCE_EVM_ADDRESS);
     expect(output.tokens[0].symbol).toBe('SAUCE');
     expect(output.tokens[0].indexed).toBe(true);
   });
@@ -91,6 +93,8 @@ describe('market price', () => {
     const output = assertOutput(result.result, MarketPriceOutputSchema);
     expect(output.totalCount).toBe(2);
     expect(output.indexedCount).toBe(1);
+    expect(output.tokens[0].tokenId).toBe(UNKNOWN_TOKEN_ID);
+    expect(output.tokens[1].tokenId).toBe(SAUCE_TOKEN_ID);
     expect(output.tokens[0].indexed).toBe(false);
     expect(output.tokens[1].indexed).toBe(true);
   });

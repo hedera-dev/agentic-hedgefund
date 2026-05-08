@@ -35,6 +35,8 @@ describe('market quote', () => {
     ).execute(args);
 
     const output = assertOutput(result.result, MarketQuoteOutputSchema);
+    expect(output.tokenId).toBe(SAUCE_TOKEN_ID);
+    expect(output.evmAddress).toBe(SAUCE_EVM_ADDRESS);
     expect(output.warningLevel).toBe('low');
     expect(output.estimatedSlippagePct).toBeLessThan(1);
     expect(output.formula).toBe(

@@ -7,6 +7,7 @@ export const MarketPoolsOutputSchema = z.object({
   networkMismatchWarning: z.boolean(),
   chain: z.literal(DEX_SCREENER_HEDERA_CHAIN_ID),
   tokenInput: z.string(),
+  tokenId: z.string(),
   evmAddress: z.string(),
   limit: z.number().int().positive(),
   pools: z.array(
@@ -43,8 +44,9 @@ export const MARKET_POOLS_TEMPLATE = `
    The market plugin supports mainnet only.
 {{/if}}
 
-🌊 Pools for {{tokenInput}}
+🌊 Pools for {{tokenId}}
 Chain: {{chain}}
+EVM: {{evmAddress}}
 Total: {{totalCount}}
 Returned: {{returnedCount}}
 {{#each pools}}

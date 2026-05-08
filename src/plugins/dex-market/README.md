@@ -5,7 +5,7 @@ Market data commands for Hedera tokens. The plugin reads pool and price data fro
 ## Data sources
 
 - DexScreener public API for prices, pools, pairs, liquidity, volume, and search.
-- Hedera Mirror Node for resolving `0.0.x` token IDs to EVM addresses.
+- Hedera Mirror Node for resolving token references to canonical token IDs and EVM addresses.
 - DexScreener endpoints used by this plugin do not require an API key.
 
 ## Setup

@@ -32,12 +32,15 @@ describe('TokenAddressServiceImpl', () => {
     } as unknown as HederaMirrornodeService;
     const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
 
-    const result = await tokenAddress.resolveEvmAddress(
+    const result = await tokenAddress.resolveTokenAddress(
       SAUCE_TOKEN_ID,
       'mainnet',
     );
 
-    expect(result).toBe(SAUCE_EVM_ADDRESS);
+    expect(result).toEqual({
+      tokenId: SAUCE_TOKEN_ID,
+      evmAddress: SAUCE_EVM_ADDRESS,
+    });
     expect(mirrorNode.getTokenInfo).toHaveBeenCalledWith(SAUCE_TOKEN_ID);
   });
 
@@ -48,9 +51,12 @@ describe('TokenAddressServiceImpl', () => {
     const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
     const input = '0xAbCdEf1234567890AbCdEf1234567890AbCdEf12';
 
-    const result = await tokenAddress.resolveEvmAddress(input, 'mainnet');
+    const result = await tokenAddress.resolveTokenAddress(input, 'mainnet');
 
-    expect(result).toBe(SAUCE_EVM_ADDRESS);
+    expect(result).toEqual({
+      tokenId: SAUCE_TOKEN_ID,
+      evmAddress: SAUCE_EVM_ADDRESS,
+    });
     expect(mirrorNode.getTokenInfo).toHaveBeenCalledWith(
       'AbCdEf1234567890AbCdEf1234567890AbCdEf12',
     );
@@ -62,12 +68,15 @@ describe('TokenAddressServiceImpl', () => {
     } as unknown as HederaMirrornodeService;
     const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
 
-    const result = await tokenAddress.resolveEvmAddress(
+    const result = await tokenAddress.resolveTokenAddress(
       `  ${SAUCE_TOKEN_ID}  `,
       'mainnet',
     );
 
-    expect(result).toBe(SAUCE_EVM_ADDRESS);
+    expect(result).toEqual({
+      tokenId: SAUCE_TOKEN_ID,
+      evmAddress: SAUCE_EVM_ADDRESS,
+    });
     expect(mirrorNode.getTokenInfo).toHaveBeenCalledWith(SAUCE_TOKEN_ID);
   });
 
@@ -80,7 +89,7 @@ describe('TokenAddressServiceImpl', () => {
     const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
 
     await expect(
-      tokenAddress.resolveEvmAddress('invalid', 'mainnet'),
+      tokenAddress.resolveTokenAddress('invalid', 'mainnet'),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -92,9 +101,9 @@ describe('TokenAddressServiceImpl', () => {
     } as unknown as HederaMirrornodeService;
     const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
 
-    await expect(tokenAddress.resolveEvmAddress('', 'mainnet')).rejects.toThrow(
-      ValidationError,
-    );
+    await expect(
+      tokenAddress.resolveTokenAddress('', 'mainnet'),
+    ).rejects.toThrow(ValidationError);
   });
 
   test('missing Mirror Node token_id throws ValidationError', async () => {
@@ -106,7 +115,7 @@ describe('TokenAddressServiceImpl', () => {
     const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
 
     await expect(
-      tokenAddress.resolveEvmAddress(SAUCE_TOKEN_ID, 'mainnet'),
+      tokenAddress.resolveTokenAddress(SAUCE_TOKEN_ID, 'mainnet'),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -119,7 +128,7 @@ describe('TokenAddressServiceImpl', () => {
     const tokenAddress = new TokenAddressServiceImpl(mirrorNode);
 
     await expect(
-      tokenAddress.resolveEvmAddress(SAUCE_TOKEN_ID, 'mainnet'),
+      tokenAddress.resolveTokenAddress(SAUCE_TOKEN_ID, 'mainnet'),
     ).rejects.toThrow(NotFoundError);
   });
 });

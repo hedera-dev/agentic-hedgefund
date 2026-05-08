@@ -4,6 +4,7 @@ import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/cons
 
 export const MarketPriceItemSchema = z.object({
   input: z.string(),
+  tokenId: z.string(),
   evmAddress: z.string(),
   symbol: z.string().optional(),
   name: z.string().optional(),
@@ -46,6 +47,8 @@ export const MARKET_PRICE_TEMPLATE = `
 💰 Token Prices  |  {{indexedCount}}/{{totalCount}} indexed
 {{#each tokens}}
 {{add1 @index}}. {{#if indexed}}{{symbol}} ({{name}}){{else}}❌ NOT INDEXED{{/if}}
+   Token ID: {{tokenId}}
+   EVM: {{evmAddress}}
    {{#if indexed}}
    💵 USD: \${{priceUsd}}  |  Native: {{priceNative}}
    💧 Liquidity: \${{liquidityUsdFormatted}}

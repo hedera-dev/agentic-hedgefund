@@ -1,3 +1,11 @@
+export interface ResolvedTokenAddress {
+  tokenId: string;
+  evmAddress: string;
+}
+
 export interface TokenAddressService {
-  resolveEvmAddress(input: string, network: string): Promise<string>;
+  resolveTokenAddress(
+    input: string,
+    network: string,
+  ): Promise<ResolvedTokenAddress>;
 }
