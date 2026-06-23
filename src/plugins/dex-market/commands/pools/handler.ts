@@ -88,7 +88,7 @@ export class MarketPoolsCommand implements Command {
 export async function marketPools(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  const dexScreener = new DexScreenerServiceImpl(args.logger);
+  const dexScreener = new DexScreenerServiceImpl(args.api.logger);
   const tokenAddress = new TokenAddressServiceImpl(args.api.mirror);
   return new MarketPoolsCommand(dexScreener, tokenAddress).execute(args);
 }

@@ -58,6 +58,6 @@ export class MarketSearchCommand implements Command {
 export async function marketSearch(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  const dexScreener = new DexScreenerServiceImpl(args.logger);
+  const dexScreener = new DexScreenerServiceImpl(args.api.logger);
   return new MarketSearchCommand(dexScreener).execute(args);
 }

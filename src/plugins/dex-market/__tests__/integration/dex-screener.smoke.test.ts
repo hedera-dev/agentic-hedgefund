@@ -1,8 +1,8 @@
-import { DexScreenerPairSchema } from '@/plugins/dex-market/services/dex-screener-schemas';
-import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+import { SAUCE_EVM_ADDRESS } from '@/plugins/dex-market/__tests__/helpers/fixtures';
 import { makeLogger } from '@/plugins/dex-market/__tests__/helpers/mocks';
 import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
-import { SAUCE_EVM_ADDRESS } from '@/plugins/dex-market/__tests__/helpers/fixtures';
+import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+import { DexScreenerPairSchema } from '@/plugins/dex-market/services/dex-screener-schemas';
 
 const RUN = process.env.HCLI_MARKET_INTEGRATION === '1';
 const d = RUN ? describe : describe.skip;

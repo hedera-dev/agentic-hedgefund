@@ -100,7 +100,7 @@ export class MarketQuoteCommand implements Command {
 export async function marketQuote(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  const dexScreener = new DexScreenerServiceImpl(args.logger);
+  const dexScreener = new DexScreenerServiceImpl(args.api.logger);
   const tokenAddress = new TokenAddressServiceImpl(args.api.mirror);
   return new MarketQuoteCommand(dexScreener, tokenAddress).execute(args);
 }

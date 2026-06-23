@@ -60,6 +60,6 @@ export class MarketPairCommand implements Command {
 export async function marketPair(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  const dexScreener = new DexScreenerServiceImpl(args.logger);
+  const dexScreener = new DexScreenerServiceImpl(args.api.logger);
   return new MarketPairCommand(dexScreener).execute(args);
 }

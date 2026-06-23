@@ -1,41 +1,42 @@
 import type { PluginManifest } from '@hiero-ledger/hiero-cli';
+
 import { OptionType } from '@hiero-ledger/hiero-cli';
 
+import {
+  MARKET_LIQUIDITY_TEMPLATE,
+  marketLiquidity,
+  MarketLiquidityOutputSchema,
+} from './commands/liquidity';
+import {
+  MARKET_PAIR_TEMPLATE,
+  marketPair,
+  MarketPairOutputSchema,
+} from './commands/pair';
+import {
+  MARKET_POOLS_TEMPLATE,
+  marketPools,
+  MarketPoolsOutputSchema,
+} from './commands/pools';
+import {
+  MARKET_PRICE_TEMPLATE,
+  marketPrice,
+  MarketPriceOutputSchema,
+} from './commands/price';
+import {
+  MARKET_QUOTE_TEMPLATE,
+  marketQuote,
+  MarketQuoteOutputSchema,
+} from './commands/quote';
+import {
+  MARKET_SEARCH_TEMPLATE,
+  marketSearch,
+  MarketSearchOutputSchema,
+} from './commands/search';
 import {
   DEFAULT_POOLS_LIMIT,
   DEFAULT_SEARCH_LIMIT,
   DEX_SCREENER_MAX_BATCH,
 } from './services/constants';
-import {
-  marketLiquidity,
-  MarketLiquidityOutputSchema,
-  MARKET_LIQUIDITY_TEMPLATE,
-} from './commands/liquidity';
-import {
-  marketPair,
-  MarketPairOutputSchema,
-  MARKET_PAIR_TEMPLATE,
-} from './commands/pair';
-import {
-  marketPools,
-  MarketPoolsOutputSchema,
-  MARKET_POOLS_TEMPLATE,
-} from './commands/pools';
-import {
-  marketPrice,
-  MarketPriceOutputSchema,
-  MARKET_PRICE_TEMPLATE,
-} from './commands/price';
-import {
-  marketQuote,
-  MarketQuoteOutputSchema,
-  MARKET_QUOTE_TEMPLATE,
-} from './commands/quote';
-import {
-  marketSearch,
-  MarketSearchOutputSchema,
-  MARKET_SEARCH_TEMPLATE,
-} from './commands/search';
 
 export const dexMarketPluginManifest: PluginManifest = {
   name: 'dex-market',
