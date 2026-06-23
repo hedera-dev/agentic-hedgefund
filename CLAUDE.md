@@ -6,7 +6,7 @@ Reference demo showing how AI agents can act as first-class blockchain actors on
 
 - **Use the global `hcli` installation** — never the local build at `~/IdeaProjects/hedera-cli-fork/`
 - **Always append `--format json`** to every `hcli` command so skills can parse stdout
-- **SaucerSwap API key** lives in `.claude/settings.json` under `SAUCERSWAP_API_KEY` — never print it
+- **SaucerSwap API key** should live in `.claude/settings.json` under `SAUCERSWAP_API_KEY`, ask for it if not present — never print it
 - **Use current operator account** — read it with `hcli network get-operator --format json`
 - **Use skills from this project** (in `.claude/skills/`) for all hedge fund flows
 
