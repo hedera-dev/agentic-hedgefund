@@ -22,7 +22,7 @@ Exact-input trade: sell exactly `--amount` of `--from`, receive at least the sli
 | `--from`       | `-f`  | string | **yes**  | —        | Input token.                                          |
 | `--to`         | `-t`  | string | **yes**  | —        | Output token.                                         |
 | `--amount`     | `-a`  | string | **yes**  | —        | Exact input amount. Display units, or raw with `"t"`. |
-| `--fee-tier`   | `-F`  | number | **yes**  | —        | Pool fee tier: `500`, `1500`, `3000`, or `10000`.     |
+| `--fee-tier`   | `-e`  | number | **yes**  | —        | Pool fee tier: `500`, `1500`, `3000`, or `10000`.     |
 | `--min-output` | `-o`  | string | no       | —        | Explicit minimum output. Overrides slippage when set. |
 | `--slippage`   | `-s`  | number | no       | `0.5`    | Slippage %, used when `--min-output` is omitted.      |
 | `--deadline`   | `-d`  | number | no       | `180`    | Deadline seconds from now.                            |
