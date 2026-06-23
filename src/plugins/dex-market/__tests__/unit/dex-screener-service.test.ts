@@ -1,5 +1,5 @@
 import { NetworkError, NotFoundError } from '@hiero-ledger/hiero-cli';
-import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
+
 import {
   fixtureSaucePair,
   fixtureUnknownChainPair,
@@ -7,6 +7,7 @@ import {
 } from '@/plugins/dex-market/__tests__/helpers/fixtures';
 import { makeLogger } from '@/plugins/dex-market/__tests__/helpers/mocks';
 import { DEX_SCREENER_HEDERA_CHAIN_ID } from '@/plugins/dex-market/services/constants';
+import { DexScreenerServiceImpl } from '@/plugins/dex-market/services/dex-screener.service';
 
 describe('DexScreenerServiceImpl', () => {
   let service: DexScreenerServiceImpl;

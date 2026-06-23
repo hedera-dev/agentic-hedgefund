@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import type { z } from 'zod';
 
 export function assertOutput<T>(data: unknown, schema: z.ZodType<T>): T {
   const result = schema.safeParse(data);

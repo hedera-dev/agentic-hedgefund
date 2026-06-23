@@ -117,7 +117,7 @@ export class MarketPriceCommand implements Command {
 export async function marketPrice(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  const dexScreener = new DexScreenerServiceImpl(args.logger);
+  const dexScreener = new DexScreenerServiceImpl(args.api.logger);
   const tokenAddress = new TokenAddressServiceImpl(args.api.mirror);
   return new MarketPriceCommand(dexScreener, tokenAddress).execute(args);
 }

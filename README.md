@@ -47,6 +47,34 @@ See [ADR-002](docs/adr/ADR-002-saucerswap-v2-dex-plugin.md) for full design deci
 
 ---
 
+### `dex-market` — DEX Market Data Plugin
+
+Read-only market data for Hedera tokens. Pulls prices, pools, pairs, liquidity, and quotes from the [DexScreener](https://dexscreener.com) public API and resolves Hedera token IDs through the Hedera Mirror Node. **No API key required.**
+
+| Command     | Summary                                                        |
+| ----------- | -------------------------------------------------------------- |
+| `price`     | Fetch current price data for one or more tokens (up to 30)     |
+| `pools`     | List liquidity pools for a token, sorted by liquidity          |
+| `pair`      | Fetch full details for a specific pair contract address        |
+| `search`    | Search DexScreener pairs on Hedera by symbol, name, or address |
+| `liquidity` | Aggregate liquidity across all pools and check a USD threshold |
+| `quote`     | Estimate price impact (slippage) for a USD position size       |
+
+Example usage:
+
+```bash
+hcli dex-market price --token 0.0.731861 --token 0.0.456858
+hcli dex-market pools --token 0.0.731861 --limit 10
+hcli dex-market search --query SAUCE --limit 10
+hcli dex-market pair --pair 0x4A46705176faC8Fd5C8061F94A2C44416e7B20e6
+hcli dex-market liquidity --token 0.0.731861 --min-usd 10000
+hcli dex-market quote --token 0.0.731861 --size 1000
+```
+
+> `quote` output is a constant-product approximation — not a router-grade executable quote.
+
+---
+
 ## SaucerSwap API Key
 
 Several commands query the [SaucerSwap REST API](https://docs.saucerswap.finance/v/developer/rest-api/authentication) and require an `--api-key` argument, which is forwarded as the `x-api-key` request header.
@@ -95,6 +123,9 @@ hcli plugin-management add -p dist/plugins/saucerswap-v1/
 
 # SaucerSwap V2
 hcli plugin-management add -p dist/plugins/saucerswap-v2/
+
+# DEX Market
+hcli plugin-management add -p dist/plugins/dex-market/
 ```
 
 Once registered, the commands are available as subcommands of the plugin name:
@@ -105,6 +136,9 @@ hcli saucerswap-v1 swap --from HBAR --to 0.0.12345 --amount 10
 
 hcli saucerswap-v2 list-pools --api-key <key>
 hcli saucerswap-v2 swap --from HBAR --to 0.0.12345 --amount 5 --fee-tier 3000
+
+hcli dex-market price --token 0.0.731861
+hcli dex-market pools --token 0.0.731861 --limit 10
 ```
 
 ---
@@ -166,7 +200,8 @@ Invoke skills inside Claude Code with `/agentic-hedge-fund-saucerswap`, `/agenti
 src/
 ├── plugins/
 │   ├── saucerswap-v1/   # V1 plugin source
-│   └── saucerswap-v2/   # V2 plugin source
+│   ├── saucerswap-v2/   # V2 plugin source
+│   └── dex-market/      # DEX market data plugin source (DexScreener)
 └── shared/              # Shared services, schemas, and utilities
 docs/
 ├── adr/                 # Architecture Decision Records

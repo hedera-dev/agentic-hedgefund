@@ -98,7 +98,7 @@ export class MarketLiquidityCommand implements Command {
 export async function marketLiquidity(
   args: CommandHandlerArgs,
 ): Promise<CommandResult> {
-  const dexScreener = new DexScreenerServiceImpl(args.logger);
+  const dexScreener = new DexScreenerServiceImpl(args.api.logger);
   const tokenAddress = new TokenAddressServiceImpl(args.api.mirror);
   return new MarketLiquidityCommand(dexScreener, tokenAddress).execute(args);
 }

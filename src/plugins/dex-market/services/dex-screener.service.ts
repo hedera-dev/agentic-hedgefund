@@ -2,20 +2,18 @@ import type { Logger } from '@hiero-ledger/hiero-cli';
 import type { DexScreenerService } from './dex-screener.service.interface';
 import type { DexScreenerPair } from './dex-screener-types';
 
-import { z } from 'zod';
-
 import {
   NetworkError,
   NotFoundError,
   ValidationError,
 } from '@hiero-ledger/hiero-cli';
+import { z } from 'zod';
 
 import {
   DEX_SCREENER_BASE_URL,
   DEX_SCREENER_DEFAULT_TIMEOUT_MS,
   DEX_SCREENER_HEDERA_CHAIN_ID,
 } from './constants';
-
 import {
   DexScreenerPairSchema,
   DexScreenerPairsResponseSchema,
