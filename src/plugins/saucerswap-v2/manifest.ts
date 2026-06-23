@@ -87,7 +87,7 @@ export const saucerswapV2PluginManifest: PluginManifest = {
         },
         {
           name: 'fee-tier',
-          short: 'F',
+          short: 'e',
           type: OptionType.NUMBER,
           required: true,
           description: 'Pool fee tier: 500, 1500, 3000, or 10000',
@@ -182,7 +182,7 @@ export const saucerswapV2PluginManifest: PluginManifest = {
         },
         {
           name: 'fee-tier',
-          short: 'F',
+          short: 'e',
           type: OptionType.NUMBER,
           required: true,
           description: 'Pool fee tier: 500, 1500, 3000, or 10000',
