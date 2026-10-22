@@ -45,9 +45,6 @@ export function makeMarketCommandArgs(
       state: {} as unknown as CommandHandlerArgs['api']['state'],
       config: {} as unknown as CommandHandlerArgs['api']['config'],
     } as unknown as CommandHandlerArgs['api'],
-    logger,
-    state: {} as unknown as CommandHandlerArgs['state'],
-    config: {} as unknown as CommandHandlerArgs['config'],
     args: config.args ?? {},
     hooks: new Map(),
   };

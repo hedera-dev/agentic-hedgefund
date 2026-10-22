@@ -93,9 +93,12 @@ hcli saucerswap-v2 list-pools --api-key <your-api-key>
 
 ## Building
 
-**Requirements:** Node.js ≥ 18
+**Requirements:** Node.js 22.23.4, 24.22.1 or 26.12.1 or newer. Earlier releases are affected by the Node.js security releases of July and October 2026. `.nvmrc` pins 22.23.4.
+
+The same applies to the Node.js that runs your global `hcli`: the plugins are loaded into that process.
 
 ```bash
+nvm use
 npm install
 npm run build
 ```
